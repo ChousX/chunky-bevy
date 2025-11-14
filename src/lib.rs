@@ -4,7 +4,7 @@ use bevy::{
 };
 use std::collections::HashMap;
 pub mod prelude {
-    pub use crate::{Chunk, ChunkPos, ChunkyPlugin};
+    pub use crate::{Chunk, ChunkLoader, ChunkManager, ChunkPos, ChunkyPlugin};
 }
 
 pub struct ChunkyPlugin {
@@ -19,6 +19,7 @@ impl Plugin for ChunkyPlugin {
                 Update,
                 chunk_boundry_visualizer.run_if(in_state(ChunkBoundryVisualizer::On)),
             );
+        app.add_systems(Update, chunk_loader);
     }
 }
 
@@ -48,10 +49,16 @@ pub struct Chunk;
 ///Adds Chunk to ChunkManager
 fn on_add_chunk(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
     let chunk_pos = world.get::<ChunkPos>(entity).unwrap().0;
-    world
+    if let Some(_) = world
         .get_resource_mut::<ChunkManager>()
         .unwrap()
-        .insert(chunk_pos, entity);
+        .insert(chunk_pos, entity)
+    {
+        //if we remove it then the chunk just added will also be removed so...
+        warn!("a chunk is being lost")
+    }
+    #[cfg(feature = "chunk_info")]
+    info!("[ChunkInfo]ChunkPos: {chunk_pos:?}");
 }
 
 ///Removes Chunk from ChunkManager
@@ -111,7 +118,7 @@ impl ChunkManager {
 
     ///Converts cordinits into chunk position
     pub fn get_chunk_pos(&self, pos: &Vec3) -> IVec3 {
-        (*pos / self.chunk_size).as_ivec3()
+        (*pos / self.chunk_size).floor().as_ivec3()
     }
 
     ///Gets chunk entity if it exists
@@ -165,23 +172,51 @@ pub enum ChunkBoundryVisualizer {
 }
 
 ///Shows all existing chunk boundreis
+///p011 ------ p111
+/// /|          /|
+///p001 ----- p101
+/// | p010 ----| p110
+/// |/         |/
+///p000 ----- p100
 fn chunk_boundry_visualizer(
     chunk_manager: Res<ChunkManager>,
     chunks: Query<&ChunkPos>,
     mut gizmos: Gizmos,
 ) {
-    let chunk_size = chunk_manager.get_size();
+    let chunk_size = chunk_manager.get_size(); // Vec3
+
     for ChunkPos(chunk_pos) in chunks.iter() {
-        let bottom_left = chunk_pos.as_vec3() * chunk_size;
-        let bottom_right = bottom_left + Vec3::new(chunk_size.x, 0.0, 0.0);
-        let top_right = bottom_right + Vec3::new(0.0, chunk_size.y, 0.0);
-        let top_left = bottom_left + Vec3::new(0.0, chunk_size.y, 0.0);
+        let origin = chunk_pos.as_vec3() * chunk_size;
+
+        // 8 corners of the box
+        let p000 = origin;
+        let p100 = origin + Vec3::new(chunk_size.x, 0.0, 0.0);
+        let p010 = origin + Vec3::new(0.0, chunk_size.y, 0.0);
+        let p110 = origin + Vec3::new(chunk_size.x, chunk_size.y, 0.0);
+
+        let p001 = origin + Vec3::new(0.0, 0.0, chunk_size.z);
+        let p101 = origin + Vec3::new(chunk_size.x, 0.0, chunk_size.z);
+        let p011 = origin + Vec3::new(0.0, chunk_size.y, chunk_size.z);
+        let p111 = origin + Vec3::new(chunk_size.x, chunk_size.y, chunk_size.z);
 
         let color = bevy::color::palettes::tailwind::GREEN_500;
 
-        gizmos.line(top_left, top_right, color);
-        gizmos.line(top_right, bottom_right, color);
-        gizmos.line(bottom_right, bottom_left, color);
-        gizmos.line(bottom_left, top_left, color);
+        // bottom rectangle
+        gizmos.line(p000, p100, color);
+        gizmos.line(p100, p110, color);
+        gizmos.line(p110, p010, color);
+        gizmos.line(p010, p000, color);
+
+        // top rectangle
+        gizmos.line(p001, p101, color);
+        gizmos.line(p101, p111, color);
+        gizmos.line(p111, p011, color);
+        gizmos.line(p011, p001, color);
+
+        // vertical edges
+        gizmos.line(p000, p001, color);
+        gizmos.line(p100, p101, color);
+        gizmos.line(p110, p111, color);
+        gizmos.line(p010, p011, color);
     }
 }
