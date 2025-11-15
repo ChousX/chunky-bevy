@@ -4,7 +4,11 @@ use bevy::{
 };
 use std::collections::HashMap;
 pub mod prelude {
-    pub use crate::{Chunk, ChunkLoader, ChunkManager, ChunkPos, ChunkyPlugin};
+    #[cfg(feature = "chunk_visualizer")]
+    pub use crate::ChunkBoundryVisualizer;
+    #[cfg(feature = "chunk_loader")]
+    pub use crate::ChunkLoader;
+    pub use crate::{Chunk, ChunkManager, ChunkPos, ChunkyPlugin};
 }
 
 pub struct ChunkyPlugin {
@@ -13,12 +17,13 @@ pub struct ChunkyPlugin {
 
 impl Plugin for ChunkyPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(ChunkManager::new(self.chunk_size))
-            .init_state::<ChunkBoundryVisualizer>()
-            .add_systems(
-                Update,
-                chunk_boundry_visualizer.run_if(in_state(ChunkBoundryVisualizer::On)),
-            );
+        app.insert_resource(ChunkManager::new(self.chunk_size));
+        #[cfg(feature = "chunk_visualizer")]
+        app.init_state::<ChunkBoundryVisualizer>().add_systems(
+            Update,
+            chunk_boundry_visualizer.run_if(in_state(ChunkBoundryVisualizer::On)),
+        );
+        #[cfg(feature = "chunk_loader")]
         app.add_systems(Update, chunk_loader);
     }
 }
@@ -37,6 +42,47 @@ impl Default for ChunkyPlugin {
     }
 }
 
+pub mod helpers {
+    use crate::{Chunk, ChunkPos};
+    use bevy::prelude::*;
+
+    pub fn spawn_chunks_rect(commands: &mut Commands, chunk_pos_0: IVec3, chunk_pos_1: IVec3) {
+        let (x_small, x_big) = if chunk_pos_0.x > chunk_pos_1.x {
+            (chunk_pos_1.x, chunk_pos_0.x)
+        } else {
+            (chunk_pos_0.x, chunk_pos_1.x)
+        };
+        let (y_small, y_big) = if chunk_pos_0.y > chunk_pos_1.y {
+            (chunk_pos_1.y, chunk_pos_0.y)
+        } else {
+            (chunk_pos_0.y, chunk_pos_1.y)
+        };
+        let (z_small, z_big) = if chunk_pos_0.z > chunk_pos_1.z {
+            (chunk_pos_1.z, chunk_pos_0.z)
+        } else {
+            (chunk_pos_0.z, chunk_pos_1.z)
+        };
+        for x in x_small..=x_big {
+            for y in y_small..=y_big {
+                for z in z_small..=z_big {
+                    let chunk_pos = ivec3(x, y, z);
+                    commands.spawn((Chunk, ChunkPos(chunk_pos)));
+                }
+            }
+        }
+    }
+
+    pub fn spawn_chunks_rect_from_world_pos(
+        commands: &mut Commands,
+        chunk_pos_0: Vec3,
+        chunk_pos_1: Vec3,
+    ) {
+        let chunk_pos_0 = chunk_pos_0.floor().as_ivec3();
+        let chunk_pos_1 = chunk_pos_1.floor().as_ivec3();
+        spawn_chunks_rect(commands, chunk_pos_0, chunk_pos_1);
+    }
+}
+
 #[derive(Component)]
 #[require(ChunkPos, Visibility)]
 #[component(
@@ -49,14 +95,17 @@ pub struct Chunk;
 ///Adds Chunk to ChunkManager
 fn on_add_chunk(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
     let chunk_pos = world.get::<ChunkPos>(entity).unwrap().0;
-    if let Some(_) = world
-        .get_resource_mut::<ChunkManager>()
-        .unwrap()
-        .insert(chunk_pos, entity)
-    {
-        //if we remove it then the chunk just added will also be removed so...
-        warn!("a chunk is being lost")
+    let mut chunk_manager = world.get_resource_mut::<ChunkManager>().unwrap();
+    if chunk_manager.is_loaded(&chunk_pos) {
+        warn!(
+            "New chunk at pos:{} was not spawned there was already a chunk there",
+            chunk_pos.0
+        );
+        return;
     }
+
+    chunk_manager.insert(chunk_pos, entity);
+
     #[cfg(feature = "chunk_info")]
     info!("[ChunkInfo]ChunkPos: {chunk_pos:?}");
 }
@@ -164,6 +213,7 @@ fn chunk_loader(
     }
 }
 
+#[cfg(feature = "chunk_visualizer")]
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
 pub enum ChunkBoundryVisualizer {
     #[default]
@@ -178,6 +228,7 @@ pub enum ChunkBoundryVisualizer {
 /// | p010 ----| p110
 /// |/         |/
 ///p000 ----- p100
+#[cfg(feature = "chunk_visualizer")]
 fn chunk_boundry_visualizer(
     chunk_manager: Res<ChunkManager>,
     chunks: Query<&ChunkPos>,
