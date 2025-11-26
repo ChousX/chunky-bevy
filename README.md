@@ -1,4 +1,4 @@
-# Chunky
+# Chunky Bevy
 
 A simple and efficient chunk management system for Bevy game engine, perfect for voxel games, procedural worlds, and any application that needs spatial partitioning.
 
@@ -17,14 +17,14 @@ Add to your `Cargo.toml`:
 ```toml
 [dependencies]
 bevy = "0.17"
-chunky = "0.1"
+chunky-bevy = "0.1"
 ```
 
 Basic usage:
 
 ```rust
 use bevy::prelude::*;
-use chunky::prelude::*;
+use chunky-bevy::prelude::*;
 
 fn main() {
     App::new()
@@ -60,7 +60,7 @@ fn setup(mut commands: Commands) {
 
 ### Disable default features:
 ```toml
-chunky = { version = "0.1", default-features = false }
+chunky-bevy = { version = "0.1", default-features = false }
 ```
 
 ## Components
@@ -116,7 +116,7 @@ fn setup(mut visualizer: ResMut<NextState<ChunkBoundryVisualizer>>) {
 Spawn multiple chunks at once:
 
 ```rust
-use chunky::helpers::*;
+use chunky-bevy::helpers::*;
 
 fn setup(mut commands: Commands) {
     // Spawn chunks from (0,0,0) to (5,5,5)
@@ -153,7 +153,7 @@ Controls:
 ## Custom Chunk Sizes
 
 ```rust
-use chunky::ChunkyPlugin;
+use chunky-bevy::ChunkyPlugin;
 
 App::new()
     .add_plugins(ChunkyPlugin::THREE_DIMETION) // 10x10x10 (default)
@@ -165,9 +165,9 @@ App::new()
 
 ## Bevy Version Compatibility
 
-| Chunky | Bevy  |
-|--------|-------|
-| 0.1    | 0.17  |
+| Chunky Bevy | Bevy  |
+|-------------|-------|
+| 0.1         | 0.17  |
 
 ## License
 
