@@ -2,6 +2,14 @@
 name = "chunky"
 version = "0.1.0"
 edition = "2024"
+authors = ["ChousX"]
+description = "A simple and efficient chunk management system for Bevy"
+readme = "README.md"
+repository = "https://github.com/ChousX/chunky"
+license = "MIT OR Apache-2.0"
+keywords = ["bevy", "chunks", "voxel", "game", "spatial"]
+categories = ["game-engines", "game-development"]
+exclude = ["flake.nix", "flake.lock", ".gitignore"]
 
 [dependencies]
 bevy = { version = "0.17", features = ["wayland"] }
@@ -11,8 +19,8 @@ bevy = { version = "0.17", features = ["wayland"] }
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(bevy_lint)"] }
 
 [features]
-# Default to a native dev build.
-default = ["dev_native", "chunk_visualizer", "chunk_loader"]
+# Default to including both visualizer and loader
+default = ["chunk_visualizer", "chunk_loader"]
 chunk_info = []
 chunk_visualizer = []
 chunk_loader = []
@@ -72,3 +80,4 @@ debug-assertions = false
 codegen-units = 1
 # Do a second optimization pass over the entire program, including dependencies.
 # Slows compile times, marginal improvements.
+lto = true
