@@ -97,7 +97,7 @@ pub mod helpers {
     ///
     /// ```no_run
     /// use bevy::prelude::*;
-    /// use chunky::helpers::*;
+    /// use chunky_bevy::helpers::*;
     ///
     /// fn setup(mut commands: Commands) {
     ///     // Spawn a 6x6x6 cube of chunks from (0,0,0) to (5,5,5)
