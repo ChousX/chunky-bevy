@@ -4,7 +4,7 @@
 //!
 //! ```no_run
 //! use bevy::prelude::*;
-//! use chunky-bevy::prelude::*;
+//! use chunky_bevy::prelude::*;
 //!
 //! fn main() {
 //!     App::new()
@@ -50,7 +50,7 @@ pub mod prelude {
 ///
 /// ```no_run
 /// use bevy::prelude::*;
-/// use chunky-bevy::ChunkyPlugin;
+/// use chunky_bevy::ChunkyPlugin;
 ///
 /// App::new()
 ///     .add_plugins(ChunkyPlugin::default()) // 10x10x10 chunks
@@ -138,7 +138,7 @@ pub mod helpers {
     ///
     /// ```no_run
     /// use bevy::prelude::*;
-    /// use chunky-bevy::helpers::*;
+    /// use chunky_bevy::helpers::*;
     ///
     /// fn setup(mut commands: Commands) {
     ///     // Spawn chunks covering the world space from (0,0,0) to (100,50,100)
@@ -171,7 +171,7 @@ pub mod helpers {
 ///
 /// ```no_run
 /// use bevy::prelude::*;
-/// use chunky-bevy::prelude::*;
+/// use chunky_bevy::prelude::*;
 ///
 /// fn spawn_chunk(mut commands: Commands) {
 ///     commands.spawn((
@@ -225,7 +225,7 @@ fn on_remove_chunk(mut world: DeferredWorld, HookContext { entity, .. }: HookCon
 ///
 /// ```no_run
 /// use bevy::prelude::*;
-/// use chunky-bevy::prelude::*;
+/// use chunky_bevy::prelude::*;
 ///
 /// fn spawn_chunk(mut commands: Commands) {
 ///     // Spawns a chunk at chunk position (5, 0, 3)
@@ -261,7 +261,7 @@ fn on_add_chunk_pos(mut world: DeferredWorld, HookContext { entity, .. }: HookCo
 ///
 /// ```no_run
 /// use bevy::prelude::*;
-/// use chunky-bevy::prelude::*;
+/// use chunky_bevy::prelude::*;
 ///
 /// fn check_chunk(
 ///     chunk_manager: Res<ChunkManager>,
@@ -320,7 +320,7 @@ impl ChunkManager {
     ///
     /// ```no_run
     /// use bevy::prelude::*;
-    /// use chunky-bevy::prelude::*;
+    /// use chunky_bevy::prelude::*;
     ///
     /// fn example(chunk_manager: Res<ChunkManager>) {
     ///     let world_pos = Vec3::new(15.0, 5.0, 23.0);
@@ -357,7 +357,7 @@ impl ChunkManager {
 ///
 /// ```no_run
 /// use bevy::prelude::*;
-/// use chunky-bevy::prelude::*;
+/// use chunky_bevy::prelude::*;
 ///
 /// fn spawn_player(mut commands: Commands) {
 ///     commands.spawn((

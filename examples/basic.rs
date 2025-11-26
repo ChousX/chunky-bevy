@@ -1,5 +1,5 @@
 use bevy::{input::mouse::MouseMotion, prelude::*};
-use chunky::prelude::*;
+use chunky_bevy::prelude::*;
 
 fn main() {
     let mut app = App::new();
