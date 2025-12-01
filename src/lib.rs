@@ -63,13 +63,24 @@ pub struct ChunkyPlugin {
 impl Plugin for ChunkyPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ChunkManager::new(self.chunk_size));
+
+        #[cfg(feature = "reflect")]
+        app.register_type::<ChunkPos>();
         #[cfg(feature = "chunk_visualizer")]
+        {
         app.init_state::<ChunkBoundryVisualizer>().add_systems(
             Update,
             chunk_boundry_visualizer.run_if(in_state(ChunkBoundryVisualizer::On)),
         );
+        #[cfg(feature = "reflect")]
+        app.register_type::<ChunkBoundryVisualizer>();
+        }
         #[cfg(feature = "chunk_loader")]
+        {
         app.add_systems(Update, chunk_loader);
+        #[cfg(feature = "reflect")]
+        app.register_type::<ChunkLoader>();
+        }
     }
 }
 
@@ -237,6 +248,8 @@ fn on_remove_chunk(mut world: DeferredWorld, HookContext { entity, .. }: HookCon
 /// }
 /// ```
 #[derive(Component, Default, Deref, DerefMut)]
+#[cfg_attr(feature = "reflect", derive(Reflect))]
+#[cfg_attr(feature = "reflect", reflect(Component))]
 #[require(Transform)]
 #[component(
     immutable,
@@ -277,6 +290,8 @@ fn on_add_chunk_pos(mut world: DeferredWorld, HookContext { entity, .. }: HookCo
 /// }
 /// ```
 #[derive(Resource, Default)]
+#[cfg_attr(feature = "reflect", derive(Reflect))]
+#[cfg_attr(feature = "reflect", reflect(Resource))]
 pub struct ChunkManager {
     chunk_size: Vec3,
     chunks: HashMap<IVec3, Entity>,
@@ -380,6 +395,8 @@ impl ChunkManager {
 /// }
 /// ```
 #[derive(Component, Default, Debug)]
+#[cfg_attr(feature = "reflect", derive(Reflect))]
+#[cfg_attr(feature = "reflect", reflect(Component))]
 pub struct ChunkLoader(pub IVec3);
 
 /// Load Chunks Around ChunkLoader
@@ -407,6 +424,8 @@ fn chunk_loader(
 /// State for controlling chunk boundary visualization
 #[cfg(feature = "chunk_visualizer")]
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
+#[cfg_attr(feature = "reflect", derive(Reflect))]
+#[cfg_attr(feature = "reflect", reflect(Hash))]
 pub enum ChunkBoundryVisualizer {
     /// Chunk boundaries are visible
     On,
