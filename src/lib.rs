@@ -68,18 +68,18 @@ impl Plugin for ChunkyPlugin {
         app.register_type::<ChunkPos>();
         #[cfg(feature = "chunk_visualizer")]
         {
-        app.init_state::<ChunkBoundryVisualizer>().add_systems(
-            Update,
-            chunk_boundry_visualizer.run_if(in_state(ChunkBoundryVisualizer::On)),
-        );
-        #[cfg(feature = "reflect")]
-        app.register_type::<ChunkBoundryVisualizer>();
+            app.init_state::<ChunkBoundryVisualizer>().add_systems(
+                Update,
+                chunk_boundry_visualizer.run_if(in_state(ChunkBoundryVisualizer::On)),
+            );
+            #[cfg(feature = "reflect")]
+            app.register_type::<ChunkBoundryVisualizer>();
         }
         #[cfg(feature = "chunk_loader")]
         {
-        app.add_systems(Update, chunk_loader);
-        #[cfg(feature = "reflect")]
-        app.register_type::<ChunkLoader>();
+            app.add_systems(Update, chunk_loader);
+            #[cfg(feature = "reflect")]
+            app.register_type::<ChunkLoader>();
         }
     }
 }

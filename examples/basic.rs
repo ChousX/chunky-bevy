@@ -1,5 +1,5 @@
 use bevy::{input::mouse::MouseMotion, prelude::*};
-use chunky_bevy::prelude::*;
+use chunky_bevy::prelude::{ChunkBoundryVisualizer, ChunkLoader, ChunkyPlugin};
 
 fn main() {
     let mut app = App::new();
@@ -21,7 +21,7 @@ fn setup(
     commands.spawn((
         Camera3d::default(),
         MainCamera,
-        Transform::from_xyz(0.0, 5.0, 0.0),
+        Transform::from_xyz(1.0, 9.0, 35.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
     // cube
