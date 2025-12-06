@@ -75,5 +75,4 @@ fn chunk_loader(
 pub struct ChunkLoaderSettings {
     /// max_loaded: 0 will mean do not despawn chunks based on max_loaded amount
     pub max_loaded: usize,
-    pub serializing_deserializing_path: &'static Path,
 }
