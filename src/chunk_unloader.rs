@@ -300,13 +300,7 @@ struct Candidate {
 }
 impl PartialOrd for Candidate {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        use core::cmp::Ordering;
-        // We want the oldest first
-        match self.time.partial_cmp(&other.time) {
-            Some(Ordering::Equal) | None => self.entity.partial_cmp(&other.entity),
-            Some(Ordering::Less) => Some(Ordering::Greater),
-            Some(Ordering::Greater) => Some(Ordering::Less),
-        }
+        Some(self.cmp(other))
     }
 }
 impl Ord for Candidate {
