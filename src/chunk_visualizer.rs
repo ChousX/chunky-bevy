@@ -27,7 +27,6 @@ pub enum ChunkBoundryVisualizer {
 }
 
 /// Shows all existing chunk boundaries using gizmos
-#[cfg(feature = "chunk_visualizer")]
 fn chunk_boundry_visualizer(
     chunk_manager: Res<ChunkManager>,
     chunks: Query<&ChunkPos>,
