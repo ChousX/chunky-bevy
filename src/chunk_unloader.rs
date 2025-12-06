@@ -32,7 +32,7 @@
 //! }
 //! ```
 
-use std::time::Instant;
+use std::{collections::BinaryHeap, time::Instant};
 
 use bevy::prelude::*;
 
@@ -51,7 +51,11 @@ impl Plugin for ChunkUnloaderPlugin {
         #[cfg(feature = "chunk_loader")]
         app.add_systems(
             PostUpdate,
-            (update_chunk_last_access_by_limit, unload_chunks_by_limit)
+            (
+                init_chunk_last_access,
+                update_chunk_last_access_by_limit,
+                unload_chunks_by_limit,
+            )
                 .chain()
                 .run_if(
                     resource_exists::<ChunkUnloadLimit>
@@ -62,7 +66,11 @@ impl Plugin for ChunkUnloaderPlugin {
         #[cfg(not(feature = "chunk_loader"))]
         app.add_systems(
             PostUpdate,
-            (update_chunk_last_access_by_limit, unload_chunks_by_limit)
+            (
+                init_chunk_last_access,
+                update_chunk_last_access_by_limit,
+                unload_chunks_by_limit,
+            )
                 .chain()
                 .run_if(resource_exists::<ChunkUnloadLimit>),
         );
@@ -72,12 +80,10 @@ impl Plugin for ChunkUnloaderPlugin {
         {
             app.add_systems(
                 PostUpdate,
-                unload_chunks_by_distance
-                    .after(update_chunk_last_access_by_loader)
-                    .run_if(
-                        resource_exists::<ChunkUnloadByDistance>
-                            .and(not(resource_exists::<ChunkUnloadLimit>)),
-                    ),
+                unload_chunks_by_distance.run_if(
+                    resource_exists::<ChunkUnloadByDistance>
+                        .and(not(resource_exists::<ChunkUnloadLimit>)),
+                ),
             );
 
             app.add_systems(
@@ -224,27 +230,18 @@ pub enum ChunkUnloadReason {
 fn update_chunk_last_access_by_limit(
     mut commands: Commands,
     loaders: Query<(&ChunkLoader, &GlobalTransform)>,
-    mut chunks: Query<(Entity, &ChunkPos, Option<&mut ChunkLastAccess>), With<Chunk>>,
+    mut chunks: Query<(Entity, &ChunkPos), With<Chunk>>,
     chunk_manager: Res<ChunkManager>,
 ) {
     let now = Instant::now();
 
-    for (entity, chunk_pos, last_access) in chunks.iter_mut() {
+    for (entity, chunk_pos) in chunks.iter_mut() {
         let in_range = loaders.iter().any(|(loader, transform)| {
             let loader_chunk = chunk_manager.get_chunk_pos(&transform.translation());
             is_within_radius(chunk_pos.0, loader_chunk, loader.0)
         });
-
         if in_range {
-            match last_access {
-                Some(mut access) => access.0 = now,
-                None => {
-                    commands.entity(entity).insert(ChunkLastAccess(now));
-                }
-            }
-        } else if last_access.is_none() {
-            // Ensure all chunks have the component for LRU tracking
-            commands.entity(entity).insert(ChunkLastAccess::default());
+            commands.entity(entity).insert(ChunkLastAccess(now));
         }
     }
 }
@@ -269,38 +266,72 @@ fn update_chunk_last_access_by_limit(
 fn unload_chunks_by_limit(
     mut commands: Commands,
     mut unload_events: MessageWriter<ChunkUnloadEvent>,
-    chunks: Query<
-        (Entity, &ChunkPos, Option<&ChunkLastAccess>),
-        (With<Chunk>, Without<ChunkPinned>),
-    >,
+    chunks: Query<(Entity, &ChunkPos, &ChunkLastAccess), (With<Chunk>, Without<ChunkPinned>)>,
     limit: Res<ChunkUnloadLimit>,
 ) {
-    let chunk_count = chunks.iter().count();
-
-    if chunk_count <= limit.max_chunks {
+    if chunks.iter().count() <= limit.max_chunks {
         return;
     }
-
-    let to_remove = chunk_count - limit.max_chunks;
-
     // Collect and sort by last access (oldest first)
-    let mut candidates: Vec<_> = chunks
-        .iter()
-        .map(|(e, pos, access)| {
-            let time = access.map(|a| a.0).unwrap_or(Instant::now());
-            (e, pos.0, time)
-        })
-        .collect();
+    let mut candidates = BinaryHeap::new();
+    for (entity, chunk_pos, last_access) in chunks.iter() {
+        candidates.push(Candidate {
+            time: last_access.0,
+            entity,
+            pos: chunk_pos.0,
+        });
+    }
 
-    candidates.sort_by_key(|(_, _, time)| *time);
-
-    for (entity, chunk_pos, _) in candidates.into_iter().take(to_remove) {
+    while candidates.len() > limit.max_chunks {
+        let Some(Candidate { entity, pos, .. }) = candidates.pop() else {
+            panic!();
+        };
         unload_events.write(ChunkUnloadEvent {
             entity,
-            chunk_pos,
+            chunk_pos: pos,
             reason: ChunkUnloadReason::LimitExceeded,
         });
         commands.entity(entity).despawn();
+    }
+}
+
+#[derive(PartialEq, Eq, Debug)]
+struct Candidate {
+    pub time: Instant,
+    pub entity: Entity,
+    pub pos: IVec3,
+}
+impl PartialOrd for Candidate {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        use core::cmp::Ordering;
+        //we want the oldest first
+        match self.time.partial_cmp(&other.time) {
+            Some(Ordering::Equal) | None => self.entity.partial_cmp(&other.entity),
+            Some(Ordering::Less) => Some(Ordering::Greater),
+            Some(Ordering::Greater) => Some(Ordering::Less),
+        }
+    }
+}
+impl Ord for Candidate {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        use core::cmp::Ordering;
+        //we want the oldest first
+        match self.time.cmp(&other.time) {
+            Ordering::Equal => self.entity.cmp(&other.entity),
+            Ordering::Less => Ordering::Greater,
+            Ordering::Greater => Ordering::Less,
+        }
+    }
+}
+
+fn init_chunk_last_access(
+    mut commands: Commands,
+    chunks: Query<Entity, (With<Chunk>, Without<ChunkLastAccess>)>,
+) {
+    for entity in chunks.iter() {
+        commands
+            .entity(entity)
+            .insert(ChunkLastAccess(Instant::now()));
     }
 }
 
@@ -311,26 +342,19 @@ fn unload_chunks_by_limit(
 /// Updates [`ChunkLastAccess`] for chunks within any loader's radius.
 #[cfg(feature = "chunk_loader")]
 fn update_chunk_last_access_by_loader(
-    mut commands: Commands,
     loaders: Query<(&ChunkLoader, &GlobalTransform)>,
-    mut chunks: Query<(Entity, &ChunkPos, Option<&mut ChunkLastAccess>), With<Chunk>>,
+    mut chunks: Query<(&ChunkPos, &mut ChunkLastAccess), With<Chunk>>,
     chunk_manager: Res<ChunkManager>,
 ) {
     let now = Instant::now();
 
-    for (entity, chunk_pos, last_access) in chunks.iter_mut() {
+    for (chunk_pos, mut last_access) in chunks.iter_mut() {
         let in_range = loaders.iter().any(|(loader, transform)| {
             let loader_chunk = chunk_manager.get_chunk_pos(&transform.translation());
             is_within_radius(chunk_pos.0, loader_chunk, loader.0)
         });
-
         if in_range {
-            match last_access {
-                Some(mut access) => access.0 = now,
-                None => {
-                    commands.entity(entity).insert(ChunkLastAccess(now));
-                }
-            }
+            last_access.0 = now;
         }
     }
 }
