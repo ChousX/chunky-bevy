@@ -39,7 +39,7 @@ mod chunk_visualizer;
 mod chunk_unloader;
 
 /// Utility functions for spawning chunks in bulk
-mod helpers;
+pub mod helpers;
 
 use bevy::{
     ecs::{lifecycle::HookContext, world::DeferredWorld},
@@ -76,7 +76,7 @@ pub mod prelude {
 ///     .run();
 /// ```
 pub struct ChunkyPlugin {
-    chunk_size: Vec3,
+    pub chunk_size: Vec3,
 }
 
 impl Plugin for ChunkyPlugin {
@@ -95,6 +95,10 @@ impl Plugin for ChunkyPlugin {
 }
 
 impl ChunkyPlugin {
+    pub fn new(chunk_size: Vec3) -> Self {
+        Self { chunk_size }
+    }
+
     /// Standard 3D chunk configuration with 10x10x10 sized chunks
     pub const THREE_DIMETION: Self = Self {
         chunk_size: vec3(10.0, 10.0, 10.0),

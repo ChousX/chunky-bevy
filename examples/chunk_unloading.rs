@@ -9,7 +9,7 @@
 //! - Space: Cycle through unload strategies
 //! - Right-click + drag: Look around
 
-use bevy::{color::palettes::tailwind::*, input::mouse::MouseMotion, prelude::*};
+use bevy::{input::mouse::MouseMotion, prelude::*};
 use chunky_bevy::prelude::*;
 
 fn main() {

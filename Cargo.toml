@@ -1,6 +1,6 @@
 [package]
 name = "chunky-bevy"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2024"
 authors = ["ChousX"]
 description = "A simple and efficient chunk management system for Bevy"
@@ -43,6 +43,13 @@ dev_native = [
     "bevy/embedded_watcher",
 ]
 
+[[example]]
+name = "basic"
+required-features = ["chunk_loader", "chunk_visualizer"]
+
+[[example]]
+name = "chunk_unloading"
+required-features = ["chunk_loader", "chunk_unloader", "chunk_visualizer"]
 
 [package.metadata.bevy_cli.release]
 # Disable dev features for release builds.

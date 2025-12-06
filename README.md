@@ -6,6 +6,7 @@ A simple and efficient chunk management system for Bevy game engine, perfect for
 
 - 🎯 **Simple API** - Easy to use chunk management with minimal boilerplate
 - 🔄 **Automatic Loading** - Optional chunk loader component for automatic chunk spawning around entities
+- 🗑️ **Automatic Unloading** - Configurable strategies for chunk lifecycle management (distance, limit, or hybrid)
 - 👁️ **Visualization** - Built-in debug visualization for chunk boundaries
 - ⚡ **Efficient** - HashMap-based chunk lookup with O(1) access
 - 🎮 **Bevy Integration** - First-class Bevy ECS integration with hooks and resources
@@ -17,14 +18,14 @@ Add to your `Cargo.toml`:
 ```toml
 [dependencies]
 bevy = "0.17"
-chunky-bevy = "0.1"
+chunky-bevy = "0.2"
 ```
 
 Basic usage:
 
 ```rust
 use bevy::prelude::*;
-use chunky-bevy::prelude::*;
+use chunky_bevy::prelude::*;
 
 fn main() {
     App::new()
@@ -54,13 +55,15 @@ fn setup(mut commands: Commands) {
 ### Default Features
 - `chunk_visualizer` - Enables debug visualization of chunk boundaries
 - `chunk_loader` - Enables automatic chunk loading around ChunkLoader entities
+- `chunk_unloader` - Enables automatic chunk unloading with configurable strategies
+- `reflect` - Enables Bevy reflection for all types
 
 ### Optional Features
 - `chunk_info` - Logs chunk spawn/despawn events
 
 ### Disable default features:
 ```toml
-chunky-bevy = { version = "0.1", default-features = false }
+chunky-bevy = { version = "0.2", default-features = false }
 ```
 
 ## Components
@@ -74,10 +77,16 @@ The chunk's position in chunk-space coordinates. Automatically updates the entit
 ### `ChunkLoader(IVec3)`
 Automatically loads chunks in a radius around the entity. The IVec3 defines the loading radius in each direction.
 
-Example:
+Examples:
 - `ChunkLoader(IVec3::ZERO)` - Loads only the chunk the entity is in
 - `ChunkLoader(IVec3::ONE)` - Loads a 3x3x3 cube of chunks
-- `ChunkLoader(IVec3::new(5, 0, 5))` - Loads a 11x1x11 flat area
+- `ChunkLoader(IVec3::new(5, 0, 5))` - Loads an 11x1x11 flat area
+
+### `ChunkPinned`
+Prevents a chunk from being automatically unloaded. Useful for spawn areas or quest locations.
+
+### `ChunkUnloadRadius(IVec3)`
+Defines the unload radius for a specific `ChunkLoader`. If absent, defaults to the loader's load radius.
 
 ## Resources
 
@@ -101,6 +110,35 @@ fn my_system(chunk_manager: Res<ChunkManager>) {
 }
 ```
 
+### Unload Strategy Resources
+
+Chunk unloading is opt-in. Insert resources to enable different strategies:
+
+```rust
+fn setup(mut commands: Commands) {
+    // Distance-based: unload chunks beyond loader radius
+    commands.insert_resource(ChunkUnloadByDistance);
+    
+    // Limit-based: LRU eviction when chunk count exceeds max
+    commands.insert_resource(ChunkUnloadLimit { max_chunks: 1000 });
+    
+    // Hybrid (both resources): chunks must be out of range AND over limit
+}
+```
+
+## Events
+
+### `ChunkUnloadEvent`
+Sent when a chunk is about to be despawned. Read with `MessageReader<ChunkUnloadEvent>` to save data before removal.
+
+```rust
+fn save_chunks(mut events: MessageReader<ChunkUnloadEvent>) {
+    for event in events.read() {
+        println!("Chunk {:?} unloading: {:?}", event.chunk_pos, event.reason);
+    }
+}
+```
+
 ## Visualization
 
 Enable chunk boundary visualization:
@@ -116,22 +154,11 @@ fn setup(mut visualizer: ResMut<NextState<ChunkBoundryVisualizer>>) {
 Spawn multiple chunks at once:
 
 ```rust
-use chunky-bevy::helpers::*;
+use chunky_bevy::helpers::*;
 
 fn setup(mut commands: Commands) {
-    // Spawn chunks from (0,0,0) to (5,5,5)
-    spawn_chunks_rect(
-        &mut commands,
-        IVec3::ZERO,
-        IVec3::new(5, 5, 5)
-    );
-    
-    // Or from world positions
-    spawn_chunks_rect_from_world_pos(
-        &mut commands,
-        Vec3::ZERO,
-        Vec3::new(50.0, 50.0, 50.0)
-    );
+    // Spawn chunks from chunk position (0,0,0) to (5,5,5)
+    spawn_chunks_rect(&mut commands, IVec3::ZERO, IVec3::new(5, 5, 5));
 }
 ```
 
@@ -150,24 +177,24 @@ Controls:
 - **Y/I** - Move cube down/up
 - **Left Mouse Button** - Look around
 
-## Custom Chunk Sizes
+Run the chunk unloading example:
 
-```rust
-use chunky-bevy::ChunkyPlugin;
-
-App::new()
-    .add_plugins(ChunkyPlugin::THREE_DIMETION) // 10x10x10 (default)
-    // Or custom size:
-    .add_plugins(ChunkyPlugin {
-        chunk_size: Vec3::new(16.0, 256.0, 16.0),
-    })
+```bash
+cargo run --example chunk_unloading
 ```
+
+Controls:
+- **WASD** - Move horizontally
+- **Q/E** - Move down/up
+- **Space** - Cycle through unload strategies
+- **Right-click + drag** - Look around
 
 ## Bevy Version Compatibility
 
 | Chunky Bevy | Bevy  |
 |-------------|-------|
-| 0.1         | 0.17  |
+| 0.2         | 0.17  |
+| 0.1         | 0.15  |
 
 ## License
 
