@@ -1,5 +1,5 @@
 # Chunky Bevy
-
+![Screenshot](https://raw.githubusercontent.com/ChousX/chunky-bevy/main/screenshots/screenshot.png)
 A simple and efficient chunk management system for Bevy game engine, perfect for voxel games, procedural worlds, and any application that needs spatial partitioning.
 
 ## Features
