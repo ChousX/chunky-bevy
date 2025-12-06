@@ -172,7 +172,7 @@ pub struct ChunkUnloadLimit {
 ///
 /// Automatically updated based on the active unloading strategy:
 /// - With `chunk_loader`: updated when within any [`ChunkLoader`]'s radius
-/// - Without: updated for all loaded chunks each frame
+/// - Without: initialized at spawn time; oldest chunks evicted first
 #[derive(Component, Debug, Clone)]
 #[cfg_attr(feature = "reflect", derive(Reflect))]
 #[cfg_attr(feature = "reflect", reflect(Component))]
@@ -196,9 +196,9 @@ pub struct ChunkPinned;
 // Events
 // ============================================================================
 
-/// Fired when a chunk is about to be despawned by the unload system.
+/// Sent when a chunk is about to be despawned by the unload system.
 ///
-/// Users can observe this to save chunk data before removal.
+/// Read with [`MessageReader<ChunkUnloadEvent>`] to save chunk data before removal.
 #[derive(Message, Debug, Clone)]
 pub struct ChunkUnloadEvent {
     pub entity: Entity,
@@ -223,9 +223,6 @@ pub enum ChunkUnloadReason {
 // ============================================================================
 
 /// Updates [`ChunkLastAccess`] for chunks within any loader's radius (limit-only mode).
-///
-/// Without `chunk_loader` feature, this just ensures all chunks have the component.
-/// With `chunk_loader` feature, this updates access time for chunks near loaders.
 #[cfg(feature = "chunk_loader")]
 fn update_chunk_last_access_by_limit(
     mut commands: Commands,
@@ -246,10 +243,10 @@ fn update_chunk_last_access_by_limit(
     }
 }
 
-/// Updates [`ChunkLastAccess`] for all chunks (limit-only mode without chunk_loader).
+/// Ensures all chunks have [`ChunkLastAccess`] (limit-only mode without chunk_loader).
 ///
-/// Without loaders to determine "in range", we just ensure all chunks have the component.
-/// Chunks keep their original spawn time, so oldest chunks get evicted first.
+/// Without loaders to determine "in range", chunks keep their original spawn time,
+/// so oldest chunks get evicted first.
 #[cfg(not(feature = "chunk_loader"))]
 fn update_chunk_last_access_by_limit(
     mut commands: Commands,
@@ -262,7 +259,7 @@ fn update_chunk_last_access_by_limit(
     }
 }
 
-/// Limit-based LRU unloading only.
+/// Unloads chunks when count exceeds [`ChunkUnloadLimit`], evicting least recently accessed first.
 fn unload_chunks_by_limit(
     mut commands: Commands,
     mut unload_events: MessageWriter<ChunkUnloadEvent>,
@@ -304,7 +301,7 @@ struct Candidate {
 impl PartialOrd for Candidate {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         use core::cmp::Ordering;
-        //we want the oldest first
+        // We want the oldest first
         match self.time.partial_cmp(&other.time) {
             Some(Ordering::Equal) | None => self.entity.partial_cmp(&other.entity),
             Some(Ordering::Less) => Some(Ordering::Greater),
@@ -315,7 +312,7 @@ impl PartialOrd for Candidate {
 impl Ord for Candidate {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         use core::cmp::Ordering;
-        //we want the oldest first
+        // We want the oldest first
         match self.time.cmp(&other.time) {
             Ordering::Equal => self.entity.cmp(&other.entity),
             Ordering::Less => Ordering::Greater,
@@ -324,6 +321,7 @@ impl Ord for Candidate {
     }
 }
 
+/// Initializes [`ChunkLastAccess`] for newly spawned chunks.
 fn init_chunk_last_access(
     mut commands: Commands,
     chunks: Query<Entity, (With<Chunk>, Without<ChunkLastAccess>)>,
@@ -359,7 +357,7 @@ fn update_chunk_last_access_by_loader(
     }
 }
 
-/// Distance-based unloading only.
+/// Unloads chunks beyond the unload radius of all [`ChunkLoader`]s.
 #[cfg(feature = "chunk_loader")]
 fn unload_chunks_by_distance(
     mut commands: Commands,
@@ -380,7 +378,7 @@ fn unload_chunks_by_distance(
     }
 }
 
-/// Hybrid unloading: both out of range AND over limit.
+/// Hybrid unloading: chunks must be both out of range AND over the limit to be unloaded.
 #[cfg(feature = "chunk_loader")]
 fn unload_chunks_hybrid(
     mut commands: Commands,

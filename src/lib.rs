@@ -38,6 +38,9 @@ mod chunk_visualizer;
 #[cfg(feature = "chunk_unloader")]
 mod chunk_unloader;
 
+/// Utility functions for spawning chunks in bulk
+mod helpers;
+
 use bevy::{
     ecs::{lifecycle::HookContext, world::DeferredWorld},
     prelude::*,
@@ -104,80 +107,6 @@ impl Default for ChunkyPlugin {
     }
 }
 
-/// Utility functions for spawning chunks in bulk
-pub mod helpers {
-    use crate::{Chunk, ChunkPos};
-    use bevy::prelude::*;
-
-    /// Spawns chunks in a rectangular region defined by two chunk positions.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use bevy::prelude::*;
-    /// use chunky_bevy::helpers::*;
-    ///
-    /// fn setup(mut commands: Commands) {
-    ///     // Spawn a 6x6x6 cube of chunks from (0,0,0) to (5,5,5)
-    ///     spawn_chunks_rect(&mut commands, IVec3::ZERO, IVec3::splat(5));
-    /// }
-    /// ```
-    pub fn spawn_chunks_rect(commands: &mut Commands, chunk_pos_0: IVec3, chunk_pos_1: IVec3) {
-        let (x_small, x_big) = if chunk_pos_0.x > chunk_pos_1.x {
-            (chunk_pos_1.x, chunk_pos_0.x)
-        } else {
-            (chunk_pos_0.x, chunk_pos_1.x)
-        };
-        let (y_small, y_big) = if chunk_pos_0.y > chunk_pos_1.y {
-            (chunk_pos_1.y, chunk_pos_0.y)
-        } else {
-            (chunk_pos_0.y, chunk_pos_1.y)
-        };
-        let (z_small, z_big) = if chunk_pos_0.z > chunk_pos_1.z {
-            (chunk_pos_1.z, chunk_pos_0.z)
-        } else {
-            (chunk_pos_0.z, chunk_pos_1.z)
-        };
-        for x in x_small..=x_big {
-            for y in y_small..=y_big {
-                for z in z_small..=z_big {
-                    let chunk_pos = ivec3(x, y, z);
-                    commands.spawn((Chunk, ChunkPos(chunk_pos)));
-                }
-            }
-        }
-    }
-
-    /// Spawns chunks in a rectangular region defined by two world positions.
-    ///
-    /// The world positions are converted to chunk positions before spawning.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use bevy::prelude::*;
-    /// use chunky_bevy::helpers::*;
-    ///
-    /// fn setup(mut commands: Commands) {
-    ///     // Spawn chunks covering the world space from (0,0,0) to (100,50,100)
-    ///     spawn_chunks_rect_from_world_pos(
-    ///         &mut commands,
-    ///         Vec3::ZERO,
-    ///         Vec3::new(100.0, 50.0, 100.0)
-    ///     );
-    /// }
-    /// ```
-    pub fn spawn_chunks_rect_from_world_pos(
-        commands: &mut Commands,
-        chunk_pos_0: Vec3,
-        chunk_pos_1: Vec3,
-    ) {
-        let chunk_pos_0 = chunk_pos_0.floor().as_ivec3();
-        let chunk_pos_1 = chunk_pos_1.floor().as_ivec3();
-        spawn_chunks_rect(commands, chunk_pos_0, chunk_pos_1);
-    }
-}
-
 /// Marks an entity as a chunk.
 ///
 /// This component automatically:
@@ -207,7 +136,7 @@ pub mod helpers {
 )]
 pub struct Chunk;
 
-/// Adds Chunk to ChunkManager
+/// Registers the chunk with [`ChunkManager`] when added.
 fn on_add_chunk(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
     let chunk_pos = world.get::<ChunkPos>(entity).unwrap().0;
     let mut chunk_manager = world.get_resource_mut::<ChunkManager>().unwrap();
@@ -225,7 +154,7 @@ fn on_add_chunk(mut world: DeferredWorld, HookContext { entity, .. }: HookContex
     info!("[ChunkInfo]ChunkPos: {chunk_pos:?}");
 }
 
-/// Removes Chunk from ChunkManager
+/// Unregisters the chunk from [`ChunkManager`] when removed.
 fn on_remove_chunk(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
     let chunk_pos = world.get::<ChunkPos>(entity).unwrap().0;
     world
@@ -264,7 +193,7 @@ fn on_remove_chunk(mut world: DeferredWorld, HookContext { entity, .. }: HookCon
 )]
 pub struct ChunkPos(pub IVec3);
 
-/// Updates Transform to match ChunkPos
+/// Sets the entity's [`Transform`] translation based on chunk position and size.
 fn on_add_chunk_pos(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
     let chunk_pos = world.get::<ChunkPos>(entity).unwrap();
     let chunk_size = world.get_resource::<ChunkManager>().unwrap().chunk_size;
@@ -305,7 +234,7 @@ pub struct ChunkManager {
 }
 
 impl ChunkManager {
-    /// Creates a new chunk manager with the specified chunk size
+    /// Creates a new chunk manager with the specified chunk size.
     pub fn new(chunk_size: Vec3) -> Self {
         Self {
             chunk_size,
@@ -313,7 +242,7 @@ impl ChunkManager {
         }
     }
 
-    /// Returns the size of chunks in world units
+    /// Returns the size of chunks in world units.
     pub fn get_size(&self) -> Vec3 {
         self.chunk_size
     }
@@ -322,7 +251,7 @@ impl ChunkManager {
     ///
     /// Returns the previous chunk entity if one already existed at this position.
     ///
-    /// Note: This is called automatically when a [`Chunk`] component is added.
+    /// Note: Called automatically when a [`Chunk`] component is added.
     pub fn insert(&mut self, pos: IVec3, id: Entity) -> Option<Entity> {
         self.chunks.insert(pos, id)
     }
@@ -331,12 +260,12 @@ impl ChunkManager {
     ///
     /// Returns the chunk's entity if it existed.
     ///
-    /// Note: This is called automatically when a [`Chunk`] component is removed.
+    /// Note: Called automatically when a [`Chunk`] component is removed.
     pub fn remove(&mut self, pos: &IVec3) -> Option<Entity> {
         self.chunks.remove(pos)
     }
 
-    /// Converts world coordinates into chunk position
+    /// Converts world coordinates into chunk position.
     ///
     /// # Example
     ///
@@ -354,17 +283,17 @@ impl ChunkManager {
         (*pos / self.chunk_size).floor().as_ivec3()
     }
 
-    /// Gets the chunk entity at the specified chunk position if it exists
+    /// Gets the chunk entity at the specified chunk position if it exists.
     pub fn get_chunk(&self, chunk_pos: &IVec3) -> Option<Entity> {
         self.chunks.get(chunk_pos).copied()
     }
 
-    /// Gets the chunk entity at the specified world position if it exists
+    /// Gets the chunk entity at the specified world position if it exists.
     pub fn get_chunk_form_pos(&self, pos: &Vec3) -> Option<Entity> {
         self.get_chunk(&self.get_chunk_pos(pos))
     }
 
-    /// Checks if a chunk is loaded at the specified chunk position
+    /// Checks if a chunk is loaded at the specified chunk position.
     pub fn is_loaded(&self, chunk_pos: &IVec3) -> bool {
         self.chunks.contains_key(chunk_pos)
     }
