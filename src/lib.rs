@@ -29,6 +29,12 @@
 //! - `chunk_loader` (default) - Enables automatic chunk loading around ChunkLoader entities
 //! - `chunk_info` - Logs chunk spawn/despawn events
 
+#[cfg(feature = "chunk_loader")]
+mod chunk_loader;
+
+#[cfg(feature = "chunk_visualizer")]
+mod chunk_visualizer;
+
 use bevy::{
     ecs::{lifecycle::HookContext, world::DeferredWorld},
     prelude::*,
@@ -37,10 +43,10 @@ use std::collections::HashMap;
 
 /// Re-exports of commonly used types
 pub mod prelude {
-    #[cfg(feature = "chunk_visualizer")]
-    pub use crate::ChunkBoundryVisualizer;
     #[cfg(feature = "chunk_loader")]
-    pub use crate::ChunkLoader;
+    pub use crate::chunk_loader::ChunkLoader;
+    #[cfg(feature = "chunk_visualizer")]
+    pub use crate::chunk_visualizer::ChunkBoundryVisualizer;
     pub use crate::{Chunk, ChunkManager, ChunkPos, ChunkyPlugin};
 }
 
@@ -63,25 +69,13 @@ pub struct ChunkyPlugin {
 impl Plugin for ChunkyPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ChunkManager::new(self.chunk_size));
-
+        #[cfg(feature = "chunk_loader")]
+        app.add_plugins(chunk_loader::ChunkLoaderPlugin);
+        #[cfg(feature = "chunk_visualizer")]
+        app.add_plugins(chunk_visualizer::ChunkBoundryVisualizerPlugin);
         #[cfg(feature = "reflect")]
         app.register_type::<ChunkPos>()
             .register_type::<ChunkManager>();
-        #[cfg(feature = "chunk_visualizer")]
-        {
-            app.init_state::<ChunkBoundryVisualizer>().add_systems(
-                Update,
-                chunk_boundry_visualizer.run_if(in_state(ChunkBoundryVisualizer::On)),
-            );
-            #[cfg(feature = "reflect")]
-            app.register_type::<ChunkBoundryVisualizer>();
-        }
-        #[cfg(feature = "chunk_loader")]
-        {
-            app.add_systems(Update, chunk_loader);
-            #[cfg(feature = "reflect")]
-            app.register_type::<ChunkLoader>();
-        }
     }
 }
 
@@ -361,121 +355,5 @@ impl ChunkManager {
     /// Checks if a chunk is loaded at the specified chunk position
     pub fn is_loaded(&self, chunk_pos: &IVec3) -> bool {
         self.chunks.contains_key(chunk_pos)
-    }
-}
-
-/// Automatically loads chunks around the entity.
-///
-/// The `IVec3` defines the loading radius in each direction from the chunk
-/// the entity is currently in.
-///
-/// # Examples
-///
-/// ```no_run
-/// use bevy::prelude::*;
-/// use chunky_bevy::prelude::*;
-///
-/// fn spawn_player(mut commands: Commands) {
-///     commands.spawn((
-///         Transform::default(),
-///         // Load only the chunk the player is in
-///         ChunkLoader(IVec3::ZERO),
-///     ));
-///     
-///     commands.spawn((
-///         Transform::default(),
-///         // Load a 3x3x3 cube of chunks (1 in each direction)
-///         ChunkLoader(IVec3::ONE),
-///     ));
-///     
-///     commands.spawn((
-///         Transform::default(),
-///         // Load a 11x1x11 flat area (5 chunks in each horizontal direction)
-///         ChunkLoader(IVec3::new(5, 0, 5)),
-///     ));
-/// }
-/// ```
-#[derive(Component, Default, Debug)]
-#[cfg_attr(feature = "reflect", derive(Reflect))]
-#[cfg_attr(feature = "reflect", reflect(Component))]
-pub struct ChunkLoader(pub IVec3);
-
-/// Load Chunks Around ChunkLoader
-fn chunk_loader(
-    chunks: Query<(&ChunkLoader, &GlobalTransform)>,
-    chunk_manager: Res<ChunkManager>,
-    mut commands: Commands,
-) {
-    for (ChunkLoader(loading_radius), g_transform) in chunks.iter() {
-        let translation = g_transform.translation();
-        let in_chunk = chunk_manager.get_chunk_pos(&translation);
-        for x in -loading_radius.x..=loading_radius.x {
-            for y in -loading_radius.y..=loading_radius.y {
-                for z in -loading_radius.z..=loading_radius.z {
-                    let target_chunk = in_chunk + ivec3(x, y, z);
-                    if !chunk_manager.is_loaded(&target_chunk) {
-                        commands.spawn((Chunk, ChunkPos(target_chunk)));
-                    }
-                }
-            }
-        }
-    }
-}
-
-/// State for controlling chunk boundary visualization
-#[cfg(feature = "chunk_visualizer")]
-#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
-#[cfg_attr(feature = "reflect", derive(Reflect))]
-#[cfg_attr(feature = "reflect", reflect(Hash))]
-pub enum ChunkBoundryVisualizer {
-    /// Chunk boundaries are visible
-    On,
-    /// Chunk boundaries are hidden (default)
-    #[default]
-    Off,
-}
-
-/// Shows all existing chunk boundaries using gizmos
-#[cfg(feature = "chunk_visualizer")]
-fn chunk_boundry_visualizer(
-    chunk_manager: Res<ChunkManager>,
-    chunks: Query<&ChunkPos>,
-    mut gizmos: Gizmos,
-) {
-    let chunk_size = chunk_manager.get_size();
-
-    for ChunkPos(chunk_pos) in chunks.iter() {
-        let origin = chunk_pos.as_vec3() * chunk_size;
-
-        // 8 corners of the box
-        let p000 = origin;
-        let p100 = origin + Vec3::new(chunk_size.x, 0.0, 0.0);
-        let p010 = origin + Vec3::new(0.0, chunk_size.y, 0.0);
-        let p110 = origin + Vec3::new(chunk_size.x, chunk_size.y, 0.0);
-
-        let p001 = origin + Vec3::new(0.0, 0.0, chunk_size.z);
-        let p101 = origin + Vec3::new(chunk_size.x, 0.0, chunk_size.z);
-        let p011 = origin + Vec3::new(0.0, chunk_size.y, chunk_size.z);
-        let p111 = origin + Vec3::new(chunk_size.x, chunk_size.y, chunk_size.z);
-
-        let color = bevy::color::palettes::tailwind::GREEN_500;
-
-        // bottom rectangle
-        gizmos.line(p000, p100, color);
-        gizmos.line(p100, p110, color);
-        gizmos.line(p110, p010, color);
-        gizmos.line(p010, p000, color);
-
-        // top rectangle
-        gizmos.line(p001, p101, color);
-        gizmos.line(p101, p111, color);
-        gizmos.line(p111, p011, color);
-        gizmos.line(p011, p001, color);
-
-        // vertical edges
-        gizmos.line(p000, p001, color);
-        gizmos.line(p100, p101, color);
-        gizmos.line(p110, p111, color);
-        gizmos.line(p010, p011, color);
     }
 }
