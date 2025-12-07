@@ -1,6 +1,6 @@
 [package]
 name = "chunky-bevy"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 authors = ["ChousX"]
 description = "A simple and efficient chunk management system for Bevy"
@@ -13,6 +13,8 @@ exclude = ["flake.nix", "flake.lock", ".gitignore"]
 
 [dependencies]
 bevy = { version = "0.17", features = ["wayland"] }
+serde = { version = "1", features = ["derive"], optional = true}
+postcard = { version = "1", features = ["alloc"], optional = true}
 
 [lints.rust]
 # Mark `bevy_lint` as a valid `cfg`, as it is set when the Bevy linter runs.
@@ -20,12 +22,13 @@ unexpected_cfgs = { level = "warn", check-cfg = ["cfg(bevy_lint)"] }
 
 [features]
 # Default to including both visualizer and loader
-default = ["chunk_visualizer", "chunk_loader", "chunk_unloader"]
+default = ["chunk_visualizer", "chunk_loader", "chunk_unloader", "chunk_saver"]
 reflect = []
 chunk_info = []
 chunk_visualizer = []
 chunk_loader = []
 chunk_unloader = []
+chunk_saver = ["serde", "postcard"]
 
 dev = [
     # Improve compile times for dev builds by linking Bevy as a dynamic library.
@@ -50,6 +53,18 @@ required-features = ["chunk_loader", "chunk_visualizer"]
 [[example]]
 name = "chunk_unloading"
 required-features = ["chunk_loader", "chunk_unloader", "chunk_visualizer"]
+
+[[example]]
+name = "chunk_saving_auto"
+required-features = ["chunk_loader", "chunk_unloader", "chunk_saver"]
+
+[[example]]
+name = "chunk_saving"
+required-features = ["chunk_saver"]
+
+[[example]]
+name = "chunk_saving_super"
+required-features = ["chunk_saver"]
 
 [package.metadata.bevy_cli.release]
 # Disable dev features for release builds.

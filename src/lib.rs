@@ -31,12 +31,12 @@
 
 #[cfg(feature = "chunk_loader")]
 mod chunk_loader;
-
-#[cfg(feature = "chunk_visualizer")]
-mod chunk_visualizer;
-
+#[cfg(feature = "chunk_saver")]
+mod chunk_saver;
 #[cfg(feature = "chunk_unloader")]
 mod chunk_unloader;
+#[cfg(feature = "chunk_visualizer")]
+mod chunk_visualizer;
 
 /// Utility functions for spawning chunks in bulk
 pub mod helpers;
@@ -51,6 +51,11 @@ use std::collections::HashMap;
 pub mod prelude {
     #[cfg(feature = "chunk_loader")]
     pub use crate::chunk_loader::ChunkLoader;
+    #[cfg(feature = "chunk_saver")]
+    pub use crate::chunk_saver::{
+        ChunkDataRegistry, ChunkSaveConfig, ChunkSavingPlugin, RegisterChunkData, SaveError,
+        SaveStyle,
+    };
     #[cfg(all(feature = "chunk_unloader", feature = "chunk_loader"))]
     pub use crate::chunk_unloader::ChunkUnloadRadius;
     #[cfg(feature = "chunk_unloader")]

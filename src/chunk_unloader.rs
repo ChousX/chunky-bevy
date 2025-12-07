@@ -260,7 +260,7 @@ fn update_chunk_last_access_by_limit(
 }
 
 /// Unloads chunks when count exceeds [`ChunkUnloadLimit`], evicting least recently accessed first.
-fn unload_chunks_by_limit(
+pub(crate) fn unload_chunks_by_limit(
     mut commands: Commands,
     mut unload_events: MessageWriter<ChunkUnloadEvent>,
     chunks: Query<(Entity, &ChunkPos, &ChunkLastAccess), (With<Chunk>, Without<ChunkPinned>)>,
@@ -353,7 +353,7 @@ fn update_chunk_last_access_by_loader(
 
 /// Unloads chunks beyond the unload radius of all [`ChunkLoader`]s.
 #[cfg(feature = "chunk_loader")]
-fn unload_chunks_by_distance(
+pub(crate) fn unload_chunks_by_distance(
     mut commands: Commands,
     mut unload_events: MessageWriter<ChunkUnloadEvent>,
     loaders: Query<(&ChunkLoader, Option<&ChunkUnloadRadius>, &GlobalTransform)>,
@@ -374,7 +374,7 @@ fn unload_chunks_by_distance(
 
 /// Hybrid unloading: chunks must be both out of range AND over the limit to be unloaded.
 #[cfg(feature = "chunk_loader")]
-fn unload_chunks_hybrid(
+pub(crate) fn unload_chunks_hybrid(
     mut commands: Commands,
     mut unload_events: MessageWriter<ChunkUnloadEvent>,
     loaders: Query<(&ChunkLoader, Option<&ChunkUnloadRadius>, &GlobalTransform)>,
