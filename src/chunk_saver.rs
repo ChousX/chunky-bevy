@@ -496,14 +496,14 @@ fn auto_save_before_unload(
 
         // Check limit-based unload
         if let Some(ref limit) = limit
-            && chunk_count > limit.max_chunks {
-                will_unload = true;
-            }
+            && chunk_count > limit.max_chunks
+        {
+            will_unload = true;
+        }
 
-        if will_unload
-            && let Err(e) = registry.save(world, entity, &config) {
-                error!("Failed to auto-save chunk {:?}: {:?}", chunk_pos.0, e);
-            }
+        if will_unload && let Err(e) = registry.save(world, entity, &config) {
+            error!("Failed to auto-save chunk {:?}: {:?}", chunk_pos.0, e);
+        }
     }
 }
 
@@ -517,8 +517,9 @@ fn auto_load_on_spawn(
     for (entity, chunk_pos) in new_chunks.iter() {
         let path = config.chunk_path(chunk_pos.0);
         if path.exists()
-            && let Err(e) = registry.load(&mut commands, entity, &config, chunk_pos.0) {
-                error!("Failed to auto-load chunk {:?}: {:?}", chunk_pos.0, e);
-            }
+            && let Err(e) = registry.load(&mut commands, entity, &config, chunk_pos.0)
+        {
+            error!("Failed to auto-load chunk {:?}: {:?}", chunk_pos.0, e);
+        }
     }
 }
