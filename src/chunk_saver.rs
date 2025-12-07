@@ -24,13 +24,6 @@ use crate::{Chunk, ChunkManager, ChunkPos};
 #[cfg(feature = "chunk_unloader")]
 use crate::chunk_unloader::ChunkUnloadLimit;
 
-pub mod prelude {
-    pub use super::{
-        ChunkDataRegistry, ChunkSaveConfig, ChunkSavingPlugin, RegisterChunkData, SaveError,
-        SaveStyle,
-    };
-}
-
 pub struct ChunkSavingPlugin {
     base_path: PathBuf,
     style: SaveStyle,
