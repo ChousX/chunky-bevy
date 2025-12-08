@@ -7,7 +7,7 @@ A simple and efficient chunk management system for Bevy game engine, perfect for
 - 🎯 **Simple API** - Easy to use chunk management with minimal boilerplate
 - 🔄 **Automatic Loading** - Optional chunk loader component for automatic chunk spawning around entities
 - 🗑️ **Automatic Unloading** - Configurable strategies for chunk lifecycle management (distance, limit, or hybrid)
-- 💾 **Persistence** - Save and load chunk data with configurable storage strategies (New and not as teasted as I would Like)
+- 💾 **Persistence** - Save and load chunk data with configurable storage strategies (New and not as teasted as I would like)
 - 👁️ **Visualization** - Built-in debug visualization for chunk boundaries
 - ⚡ **Efficient** - HashMap-based chunk lookup with O(1) access
 - 🎮 **Bevy Integration** - First-class Bevy ECS integration with hooks and resources
