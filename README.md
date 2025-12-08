@@ -7,6 +7,7 @@ A simple and efficient chunk management system for Bevy game engine, perfect for
 - 🎯 **Simple API** - Easy to use chunk management with minimal boilerplate
 - 🔄 **Automatic Loading** - Optional chunk loader component for automatic chunk spawning around entities
 - 🗑️ **Automatic Unloading** - Configurable strategies for chunk lifecycle management (distance, limit, or hybrid)
+- 💾 **Persistence** - Save and load chunk data with configurable storage strategies
 - 👁️ **Visualization** - Built-in debug visualization for chunk boundaries
 - ⚡ **Efficient** - HashMap-based chunk lookup with O(1) access
 - 🎮 **Bevy Integration** - First-class Bevy ECS integration with hooks and resources
@@ -56,9 +57,10 @@ fn setup(mut commands: Commands) {
 - `chunk_visualizer` - Enables debug visualization of chunk boundaries
 - `chunk_loader` - Enables automatic chunk loading around ChunkLoader entities
 - `chunk_unloader` - Enables automatic chunk unloading with configurable strategies
-- `reflect` - Enables Bevy reflection for all types
+- `chunk_saver` - Enables chunk persistence with save/load functionality
 
 ### Optional Features
+- `reflect` - Enables Bevy reflection for all types
 - `chunk_info` - Logs chunk spawn/despawn events
 
 ### Disable default features:
@@ -126,6 +128,98 @@ fn setup(mut commands: Commands) {
 }
 ```
 
+## Chunk Persistence
+
+Save and load chunk data using the `chunk_saver` feature (enabled by default).
+
+### Basic Setup
+
+```rust
+use bevy::prelude::*;
+use chunky_bevy::prelude::*;
+use serde::{Serialize, Deserialize};
+
+#[derive(Component, Serialize, Deserialize, Clone)]
+struct VoxelData {
+    values: Vec<f32>,
+}
+
+fn main() {
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .add_plugins(ChunkyPlugin::default())
+        .add_plugins(ChunkSavingPlugin::new("saves/my_world"))
+        .register_chunk_data::<VoxelData>() // Register components to save
+        .run();
+}
+```
+
+### Save Styles
+
+Two storage strategies are available:
+
+```rust
+// One file per chunk (default)
+ChunkSavingPlugin::new("saves/world")
+
+// Multiple chunks grouped into super-chunk files
+ChunkSavingPlugin::new("saves/world")
+    .with_style(SaveStyle::SuperChunk { size: UVec3::splat(4) })
+```
+
+**PerChunk**: Creates individual files like `chunk_0_0_0.chunk`. Best for worlds with sparse chunk distribution.
+
+**SuperChunk**: Groups chunks into larger files like `super_0_0_0.chunks`. More efficient for dense worlds with many chunks, reducing file system overhead.
+
+### Manual Save/Load
+
+```rust
+fn save_chunk(
+    world: &World,
+    entity: Entity,
+    registry: Res<ChunkDataRegistry>,
+    config: Res<ChunkSaveConfig>,
+) {
+    registry.save(world, entity, &config).unwrap();
+}
+
+fn load_chunk(
+    mut commands: Commands,
+    registry: Res<ChunkDataRegistry>,
+    config: Res<ChunkSaveConfig>,
+) {
+    let pos = IVec3::new(0, 0, 0);
+    let entity = commands.spawn((Chunk, ChunkPos(pos))).id();
+    registry.load(&mut commands, entity, &config, pos).unwrap();
+}
+```
+
+### Automatic Save/Load
+
+!WARNING!: This feature has not been tested as well as I would like so please let me know if something is not working as you would expect!
+
+Enable auto-save when chunks unload and auto-load when chunks spawn:
+
+```rust
+ChunkSavingPlugin::new("saves/world")
+    .with_auto_save()  // Save chunks before they're unloaded
+    .with_auto_load()  // Load chunk data when chunks spawn
+```
+
+This integrates seamlessly with `ChunkLoader` and unload strategies for seamless streaming worlds.
+
+### Batch Operations
+
+For SuperChunk style, batch operations are more efficient:
+
+```rust
+// Save multiple chunks (batches writes to same super-chunk file)
+registry.save_batch(world, &entities, &config)?;
+
+// Load all chunks from a super-chunk file
+let loaded: Vec<(IVec3, Entity)> = registry.load_batch(&mut commands, &config, pos)?;
+```
+
 ## Events
 
 ### `ChunkUnloadEvent`
@@ -188,6 +282,19 @@ Controls:
 - **Q/E** - Move down/up
 - **Space** - Cycle through unload strategies
 - **Right-click + drag** - Look around
+
+Run the chunk saving examples:
+
+```bash
+# Manual save/load
+cargo run --example chunk_saving
+
+# Automatic save/load with streaming
+cargo run --example chunk_saving_auto
+
+# Super-chunk batch operations
+cargo run --example chunk_saving_super
+```
 
 ## Bevy Version Compatibility
 
