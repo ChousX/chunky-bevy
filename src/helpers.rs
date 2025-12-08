@@ -45,7 +45,7 @@ pub fn spawn_chunks_rect(commands: &mut Commands, chunk_pos_0: IVec3, chunk_pos_
 /// Spawns chunks covering integer chunk positions from floored `pos_0` to floored `pos_1`.
 ///
 /// **Note**: This treats the input positions as chunk coordinates after flooring,
-/// not as world positions. Use [`ChunkManager::get_chunk_pos`] to convert world
+/// not as world positions. Use [`crate::ChunkManager::get_chunk_pos`] to convert world
 /// positions to chunk positions first if needed.
 ///
 /// # Example
