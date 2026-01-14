@@ -300,6 +300,7 @@ cargo run --example chunk_saving_super
 
 | Chunky Bevy | Bevy  |
 |-------------|-------|
+| 0.18        | 0.18  |
 | 0.2         | 0.17  |
 | 0.1         | 0.17  |
 
