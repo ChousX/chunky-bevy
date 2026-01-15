@@ -1,25 +1,8 @@
-//! Chunk persistence module.
-//!
-//! Register serializable components to be saved/loaded with chunks.
-//!
-//! # Example
-//!
-//! ```no_run
-//! use bevy::prelude::*;
-//! use chunky_bevy::prelude::*;
-//! use chunky_bevy::saving::prelude::*;
-//!
-//! App::new()
-//!     .add_plugins(ChunkSavingPlugin::new("saves/world"))
-//!     .register_chunk_data::<MyVoxelData>()
-//!     .run();
-//! ```
-
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::{any::TypeId, collections::HashMap, fs, path::PathBuf};
 
-use crate::{Chunk, ChunkManager, ChunkPos};
+use crate::prelude::*;
 
 #[cfg(feature = "chunk_unloader")]
 use crate::chunk_unloader::ChunkUnloadLimit;
@@ -196,7 +179,10 @@ impl ChunkDataRegistry {
         entity: Entity,
         config: &ChunkSaveConfig,
     ) -> Result<(), SaveError> {
-        let pos = world.get::<ChunkPos>(entity).ok_or(SaveError::NotAChunk)?.0;
+        let pos = world
+            .get::<ChunkPositon>(entity)
+            .ok_or(SaveError::NotAChunk)?
+            .0;
 
         let components: Vec<_> = self
             .serializers
@@ -262,7 +248,10 @@ impl ChunkDataRegistry {
                     HashMap::new();
 
                 for &entity in entities {
-                    let pos = world.get::<ChunkPos>(entity).ok_or(SaveError::NotAChunk)?.0;
+                    let pos = world
+                        .get::<ChunkPositon>(entity)
+                        .ok_or(SaveError::NotAChunk)?
+                        .0;
 
                     let components: Vec<_> = self
                         .serializers
@@ -357,11 +346,12 @@ impl ChunkDataRegistry {
 
     /// Load all chunks from a super-chunk file. Returns the positions that were loaded.
     /// For PerChunk style, loads a single chunk at the given position.
-    pub fn load_batch(
+    pub fn load_batch<T: ChunkManaging + Send>(
         &self,
         commands: &mut Commands,
         config: &ChunkSaveConfig,
         pos: IVec3,
+        chunk_manager_resource: Res<ChunkManagerResource<T>>,
     ) -> Result<Vec<(IVec3, Entity)>, SaveError> {
         let path = config.chunk_path(pos);
         let bytes = fs::read(&path).map_err(|e| SaveError::Io(e.to_string()))?;
@@ -380,7 +370,7 @@ impl ChunkDataRegistry {
                     .map_err(|e| SaveError::Deserialize(e.to_string()))?;
 
                 let entity = commands
-                    .spawn((Chunk, ChunkPos(file.pos), ChunkLoadedFromDisk))
+                    .spawn((Chunk, ChunkPositon(file.pos), ChunkLoadedFromDisk))
                     .id();
 
                 for (type_name, data) in &file.components {
@@ -510,7 +500,7 @@ fn auto_save_before_unload(
 /// Auto-load chunk data when new chunks are spawned.
 fn auto_load_on_spawn(
     mut commands: Commands,
-    new_chunks: Query<(Entity, &ChunkPos), (Added<Chunk>, Without<ChunkLoadedFromDisk>)>,
+    new_chunks: Query<(Entity, &ChunkPositon), (Added<Chunk>, Without<ChunkLoadedFromDisk>)>,
     registry: Res<ChunkDataRegistry>,
     config: Res<ChunkSaveConfig>,
 ) {
