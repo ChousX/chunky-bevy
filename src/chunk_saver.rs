@@ -4,9 +4,6 @@ use std::{any::TypeId, collections::HashMap, fs, path::PathBuf};
 
 use crate::prelude::*;
 
-#[cfg(feature = "chunk_unloader")]
-use crate::chunk_unloader::ChunkUnloadLimit;
-
 pub struct ChunkSavingPlugin {
     base_path: PathBuf,
     style: SaveStyle,
@@ -346,12 +343,12 @@ impl ChunkDataRegistry {
 
     /// Load all chunks from a super-chunk file. Returns the positions that were loaded.
     /// For PerChunk style, loads a single chunk at the given position.
-    pub fn load_batch<T: ChunkManaging + Send>(
+    pub fn load_batch(
         &self,
         commands: &mut Commands,
         config: &ChunkSaveConfig,
         pos: IVec3,
-        chunk_manager_resource: Res<ChunkManagerResource<T>>,
+        chunk_manager_entity: Entity,
     ) -> Result<Vec<(IVec3, Entity)>, SaveError> {
         let path = config.chunk_path(pos);
         let bytes = fs::read(&path).map_err(|e| SaveError::Io(e.to_string()))?;
@@ -370,7 +367,11 @@ impl ChunkDataRegistry {
                     .map_err(|e| SaveError::Deserialize(e.to_string()))?;
 
                 let entity = commands
-                    .spawn((Chunk, ChunkPositon(file.pos), ChunkLoadedFromDisk))
+                    .spawn((
+                        Chunk(chunk_manager_entity),
+                        ChunkPositon(file.pos),
+                        ChunkLoadedFromDisk,
+                    ))
                     .id();
 
                 for (type_name, data) in &file.components {
@@ -387,7 +388,11 @@ impl ChunkDataRegistry {
 
                 for (chunk_pos, components) in file.chunks {
                     let entity = commands
-                        .spawn((Chunk, ChunkPos(chunk_pos), ChunkLoadedFromDisk))
+                        .spawn((
+                            Chunk(chunk_manager_entity),
+                            ChunkPositon(chunk_pos),
+                            ChunkLoadedFromDisk,
+                        ))
                         .id();
 
                     for (type_name, data) in &components {
@@ -442,7 +447,7 @@ fn mark_chunks_for_save(
         ),
     >,
 ) {
-    // Mark all chunks - the actual save happens in process_pending_saves
+    // Mark all chunks - the actual save happens in auto_save_before_unload
     // which runs right before unload
     for entity in chunks.iter() {
         commands.entity(entity).insert(ChunkPendingSave);
@@ -450,48 +455,16 @@ fn mark_chunks_for_save(
 }
 
 /// Save chunks that are marked and about to be unloaded.
+/// The unloader systems will handle determining which chunks actually get removed.
 #[cfg(feature = "chunk_unloader")]
 fn auto_save_before_unload(
     world: &World,
-    chunks_to_unload: Query<(Entity, &ChunkPos), (With<Chunk>, With<ChunkPendingSave>)>,
+    chunks_to_save: Query<(Entity, &ChunkPositon), (With<Chunk>, With<ChunkPendingSave>)>,
     registry: Res<ChunkDataRegistry>,
     config: Res<ChunkSaveConfig>,
-    chunk_manager: Res<ChunkManager>,
-    #[cfg(feature = "chunk_loader")] loaders: Query<(
-        &crate::chunk_loader::ChunkLoader,
-        Option<&crate::chunk_unloader::ChunkUnloadRadius>,
-        &GlobalTransform,
-    )>,
-    limit: Option<Res<ChunkUnloadLimit>>,
 ) {
-    // Determine which chunks will be unloaded this frame
-    let chunk_count = chunks_to_unload.iter().count();
-
-    for (entity, chunk_pos) in chunks_to_unload.iter() {
-        let mut will_unload = false;
-
-        // Check distance-based unload
-        #[cfg(feature = "chunk_loader")]
-        {
-            let in_range = loaders.iter().any(|(loader, unload_radius, transform)| {
-                let loader_chunk = chunk_manager.get_chunk_pos(&transform.translation());
-                let radius = unload_radius.map(|r| r.0).unwrap_or(loader.0);
-                let diff = (chunk_pos.0 - loader_chunk).abs();
-                diff.x <= radius.x && diff.y <= radius.y && diff.z <= radius.z
-            });
-            if !in_range {
-                will_unload = true;
-            }
-        }
-
-        // Check limit-based unload
-        if let Some(ref limit) = limit
-            && chunk_count > limit.max_chunks
-        {
-            will_unload = true;
-        }
-
-        if will_unload && let Err(e) = registry.save(world, entity, &config) {
+    for (entity, chunk_pos) in chunks_to_save.iter() {
+        if let Err(e) = registry.save(world, entity, &config) {
             error!("Failed to auto-save chunk {:?}: {:?}", chunk_pos.0, e);
         }
     }
