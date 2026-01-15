@@ -1,29 +1,22 @@
 use bevy::{input::mouse::MouseMotion, prelude::*};
-use chunky_bevy::prelude::*;
+use chunky_bevy::prelude::{ChunkBoundryVisualizer, ChunkLoader, ChunkyPlugin};
 
 fn main() {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins);
-    app.add_plugins(ChunkyPlugin)
-        .init_resource::<ChunkManagerResource<Terrain>>();
+    app.add_plugins(ChunkyPlugin::default());
     app.add_systems(Startup, setup)
         .add_systems(Update, (camera_movement, camera_look, cube_movement));
     app.run();
 }
 
-struct Terrain;
-impl ChunkManaging for Terrain {
-    const SIZE: Vec3 = vec3(10.0, 10.0, 10.0);
-}
-
 #[derive(Component, Debug)]
-pub struct MainCamera;
+struct MainCamera;
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut visualizer: ResMut<NextState<ChunkBoundryVisualizer>>,
-    chunk_manager_resorource: Res<ChunkManagerResource<Terrain>>,
 ) {
     commands.spawn((
         Camera3d::default(),
@@ -36,10 +29,7 @@ fn setup(
         Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
         MeshMaterial3d(materials.add(Color::srgb_u8(124, 144, 255))),
         Transform::from_xyz(0.0, 0.5, 0.0),
-        ChunkLoader {
-            radius: ivec3(0, 0, 0),
-            chunk_manager_id: chunk_manager_resorource.entity,
-        },
+        ChunkLoader::default(),
     ));
     // light
     commands.spawn((

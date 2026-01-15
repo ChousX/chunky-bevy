@@ -1,6 +1,6 @@
 //! Utility functions for spawning chunks in bulk.
 
-use crate::{Chunk, ChunkPos};
+use crate::prelude::{Chunk, ChunkPositon};
 use bevy::prelude::*;
 
 /// Spawns chunks in a rectangular region defined by two chunk positions.
@@ -16,7 +16,7 @@ use bevy::prelude::*;
 ///     spawn_chunks_rect(&mut commands, IVec3::ZERO, IVec3::splat(5));
 /// }
 /// ```
-pub fn spawn_chunks_rect(commands: &mut Commands, chunk_pos_0: IVec3, chunk_pos_1: IVec3) {
+pub fn _spawn_chunks_rect(commands: &mut Commands, chunk_pos_0: IVec3, chunk_pos_1: IVec3) {
     let (x_small, x_big) = if chunk_pos_0.x > chunk_pos_1.x {
         (chunk_pos_1.x, chunk_pos_0.x)
     } else {
@@ -36,7 +36,7 @@ pub fn spawn_chunks_rect(commands: &mut Commands, chunk_pos_0: IVec3, chunk_pos_
         for y in y_small..=y_big {
             for z in z_small..=z_big {
                 let chunk_pos = ivec3(x, y, z);
-                commands.spawn((Chunk, ChunkPos(chunk_pos)));
+                //commands.spawn((Chunk, ChunkPositon(chunk_pos)));
             }
         }
     }
@@ -63,8 +63,8 @@ pub fn spawn_chunks_rect(commands: &mut Commands, chunk_pos_0: IVec3, chunk_pos_
 ///     );
 /// }
 /// ```
-pub fn spawn_chunks_rect_from_world_pos(commands: &mut Commands, pos_0: Vec3, pos_1: Vec3) {
+pub fn _spawn_chunks_rect_from_world_pos(commands: &mut Commands, pos_0: Vec3, pos_1: Vec3) {
     let chunk_pos_0 = pos_0.floor().as_ivec3();
     let chunk_pos_1 = pos_1.floor().as_ivec3();
-    spawn_chunks_rect(commands, chunk_pos_0, chunk_pos_1);
+    //spawn_chunks_rect(commands, chunk_pos_0, chunk_pos_1);
 }

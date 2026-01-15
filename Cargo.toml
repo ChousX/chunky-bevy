@@ -22,7 +22,8 @@ unexpected_cfgs = { level = "warn", check-cfg = ["cfg(bevy_lint)"] }
 
 [features]
 # Default to including both visualizer and loader
-default = ["chunk_visualizer", "chunk_loader", "chunk_unloader", "chunk_saver"]
+default = ["chunk_loader", "chunk_visualizer"]
+#["chunk_visualizer", "chunk_loader", "chunk_unloader", "chunk_saver"]
 reflect = []
 chunk_info = []
 chunk_visualizer = []
@@ -30,41 +31,25 @@ chunk_loader = []
 chunk_unloader = []
 chunk_saver = ["serde", "postcard"]
 
-dev = [
-    # Improve compile times for dev builds by linking Bevy as a dynamic library.
-    "bevy/dynamic_linking",
-    "bevy/bevy_dev_tools",
-    "bevy/bevy_ui_debug",
-    # Improve error messages coming from Bevy
-    "bevy/track_location",
-]
-dev_native = [
-    "dev",
-    # Enable asset hot reloading for native dev builds.
-    "bevy/file_watcher",
-    # Enable embedded asset hot reloading for native dev builds.
-    "bevy/embedded_watcher",
-]
+#[[example]]
+#name = "basic"
+#required-features = ["chunk_loader", "chunk_visualizer"]
 
-[[example]]
-name = "basic"
-required-features = ["chunk_loader", "chunk_visualizer"]
+#[[example]]
+#name = "chunk_unloading"
+#required-features = ["chunk_loader", "chunk_unloader", "chunk_visualizer"]
 
-[[example]]
-name = "chunk_unloading"
-required-features = ["chunk_loader", "chunk_unloader", "chunk_visualizer"]
+#[[example]]
+#name = "chunk_saving_auto"
+#required-features = ["chunk_loader", "chunk_unloader", "chunk_saver"]
 
-[[example]]
-name = "chunk_saving_auto"
-required-features = ["chunk_loader", "chunk_unloader", "chunk_saver"]
+#[[example]]
+#name = "chunk_saving"
+#required-features = ["chunk_saver"]
 
-[[example]]
-name = "chunk_saving"
-required-features = ["chunk_saver"]
-
-[[example]]
-name = "chunk_saving_super"
-required-features = ["chunk_saver"]
+#[[example]]
+#name = "chunk_saving_super"
+#required-features = ["chunk_saver"]
 
 [package.metadata.bevy_cli.release]
 # Disable dev features for release builds.
