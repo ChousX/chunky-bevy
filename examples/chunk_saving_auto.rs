@@ -109,7 +109,7 @@ fn show_info(
     }
 
     let count = chunks.iter().count();
-    if let Ok(transform) = movers.get_single() {
+    if let Ok(transform) = movers.single() {
         if let Ok(chunk_manager) = chunk_managers.get(chunk_manager_resource.entity) {
             let loader_chunk = chunk_manager.get_chunk_pos(&transform.translation);
             info!(
@@ -147,7 +147,7 @@ fn visualize_chunks_auto(
     }
 
     // Show loader position
-    if let Ok(transform) = movers.get_single() {
+    if let Ok(transform) = movers.single() {
         gizmos.sphere(
             Isometry3d::from_translation(transform.translation),
             2.0,

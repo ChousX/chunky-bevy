@@ -3,7 +3,6 @@
 //! ===========================================================================
 //! Tests batch save/load with grouped chunk files.
 
-/*
 use bevy::prelude::*;
 use chunky_bevy::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -181,4 +180,3 @@ fn visualize_chunks_super(
         }
     }
 }
-*/

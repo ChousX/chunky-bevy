@@ -36,7 +36,7 @@ use std::{collections::BinaryHeap, time::Instant};
 
 use bevy::prelude::*;
 
-use crate::{Chunk, ChunkManager, ChunkPos};
+use crate::prelude::*;
 
 #[cfg(feature = "chunk_loader")]
 use crate::chunk_loader::ChunkLoader;
@@ -137,10 +137,13 @@ pub struct ChunkUnloadByDistance;
 /// use bevy::prelude::*;
 /// use chunky_bevy::prelude::*;
 ///
-/// fn spawn_player(mut commands: Commands) {
+/// fn spawn_player(mut commands: Commands, chunk_manager_resource: Res<ChunkManagerResource<MyChunks>>) {
 ///     commands.spawn((
 ///         Transform::default(),
-///         ChunkLoader(IVec3::new(3, 2, 3)),
+///         ChunkLoader {
+///             radius: IVec3::new(3, 2, 3),
+///             chunk_manager_id: chunk_manager_resource.entity,
+///         },
 ///         // Unload chunks 2 beyond the load radius
 ///         ChunkUnloadRadius(IVec3::new(5, 4, 5)),
 ///     ));
@@ -227,18 +230,20 @@ pub enum ChunkUnloadReason {
 fn update_chunk_last_access_by_limit(
     mut commands: Commands,
     loaders: Query<(&ChunkLoader, &GlobalTransform)>,
-    mut chunks: Query<(Entity, &ChunkPos), With<Chunk>>,
-    chunk_manager: Res<ChunkManager>,
+    chunks: Query<(Entity, &Chunk, &ChunkPositon), Without<ChunkLastAccess>>,
+    chunk_managers: Query<&ChunkManager>,
 ) {
     let now = Instant::now();
 
-    for (entity, chunk_pos) in chunks.iter_mut() {
-        let in_range = loaders.iter().any(|(loader, transform)| {
-            let loader_chunk = chunk_manager.get_chunk_pos(&transform.translation());
-            is_within_radius(chunk_pos.0, loader_chunk, loader.0)
-        });
-        if in_range {
-            commands.entity(entity).insert(ChunkLastAccess(now));
+    for (entity, chunk, chunk_pos) in chunks.iter() {
+        if let Ok(chunk_manager) = chunk_managers.get(chunk.0) {
+            let in_range = loaders.iter().any(|(loader, transform)| {
+                let loader_chunk = chunk_manager.get_chunk_pos(&transform.translation());
+                is_within_radius(chunk_pos.0, loader_chunk, loader.radius)
+            });
+            if in_range {
+                commands.entity(entity).insert(ChunkLastAccess(now));
+            }
         }
     }
 }
@@ -263,7 +268,7 @@ fn update_chunk_last_access_by_limit(
 pub(crate) fn unload_chunks_by_limit(
     mut commands: Commands,
     mut unload_events: MessageWriter<ChunkUnloadEvent>,
-    chunks: Query<(Entity, &ChunkPos, &ChunkLastAccess), (With<Chunk>, Without<ChunkPinned>)>,
+    chunks: Query<(Entity, &ChunkPositon, &ChunkLastAccess), (With<Chunk>, Without<ChunkPinned>)>,
     limit: Res<ChunkUnloadLimit>,
 ) {
     if chunks.iter().count() <= limit.max_chunks {
@@ -335,18 +340,23 @@ fn init_chunk_last_access(
 #[cfg(feature = "chunk_loader")]
 fn update_chunk_last_access_by_loader(
     loaders: Query<(&ChunkLoader, &GlobalTransform)>,
-    mut chunks: Query<(&ChunkPos, &mut ChunkLastAccess), With<Chunk>>,
-    chunk_manager: Res<ChunkManager>,
+    mut chunks: Query<(&Chunk, &ChunkPositon, &mut ChunkLastAccess)>,
+    chunk_managers: Query<&ChunkManager>,
 ) {
     let now = Instant::now();
 
-    for (chunk_pos, mut last_access) in chunks.iter_mut() {
-        let in_range = loaders.iter().any(|(loader, transform)| {
-            let loader_chunk = chunk_manager.get_chunk_pos(&transform.translation());
-            is_within_radius(chunk_pos.0, loader_chunk, loader.0)
-        });
-        if in_range {
-            last_access.0 = now;
+    for (chunk, chunk_pos, mut last_access) in chunks.iter_mut() {
+        if let Ok(chunk_manager) = chunk_managers.get(chunk.0) {
+            let in_range = loaders.iter().any(|(loader, transform)| {
+                if loader.chunk_manager_id != chunk.0 {
+                    return false;
+                }
+                let loader_chunk = chunk_manager.get_chunk_pos(&transform.translation());
+                is_within_radius(chunk_pos.0, loader_chunk, loader.radius)
+            });
+            if in_range {
+                last_access.0 = now;
+            }
         }
     }
 }
@@ -357,17 +367,19 @@ pub(crate) fn unload_chunks_by_distance(
     mut commands: Commands,
     mut unload_events: MessageWriter<ChunkUnloadEvent>,
     loaders: Query<(&ChunkLoader, Option<&ChunkUnloadRadius>, &GlobalTransform)>,
-    chunks: Query<(Entity, &ChunkPos), (With<Chunk>, Without<ChunkPinned>)>,
-    chunk_manager: Res<ChunkManager>,
+    chunks: Query<(Entity, &Chunk, &ChunkPositon), Without<ChunkPinned>>,
+    chunk_managers: Query<&ChunkManager>,
 ) {
-    for (entity, chunk_pos) in chunks.iter() {
-        if !is_in_any_unload_radius(chunk_pos.0, &loaders, &chunk_manager) {
-            unload_events.write(ChunkUnloadEvent {
-                entity,
-                chunk_pos: chunk_pos.0,
-                reason: ChunkUnloadReason::OutOfRange,
-            });
-            commands.entity(entity).despawn();
+    for (entity, chunk, chunk_pos) in chunks.iter() {
+        if let Ok(chunk_manager) = chunk_managers.get(chunk.0) {
+            if !is_in_any_unload_radius(chunk.0, chunk_pos.0, &loaders, chunk_manager) {
+                unload_events.write(ChunkUnloadEvent {
+                    entity,
+                    chunk_pos: chunk_pos.0,
+                    reason: ChunkUnloadReason::OutOfRange,
+                });
+                commands.entity(entity).despawn();
+            }
         }
     }
 }
@@ -378,11 +390,8 @@ pub(crate) fn unload_chunks_hybrid(
     mut commands: Commands,
     mut unload_events: MessageWriter<ChunkUnloadEvent>,
     loaders: Query<(&ChunkLoader, Option<&ChunkUnloadRadius>, &GlobalTransform)>,
-    chunks: Query<
-        (Entity, &ChunkPos, Option<&ChunkLastAccess>),
-        (With<Chunk>, Without<ChunkPinned>),
-    >,
-    chunk_manager: Res<ChunkManager>,
+    chunks: Query<(Entity, &Chunk, &ChunkPositon, Option<&ChunkLastAccess>), Without<ChunkPinned>>,
+    chunk_managers: Query<&ChunkManager>,
     limit: Res<ChunkUnloadLimit>,
 ) {
     let chunk_count = chunks.iter().count();
@@ -396,10 +405,15 @@ pub(crate) fn unload_chunks_hybrid(
     // Only consider chunks that are out of range
     let mut candidates: Vec<_> = chunks
         .iter()
-        .filter(|(_, chunk_pos, _)| !is_in_any_unload_radius(chunk_pos.0, &loaders, &chunk_manager))
-        .map(|(e, pos, access)| {
-            let time = access.map(|a| a.0).unwrap_or(Instant::now());
-            (e, pos.0, time)
+        .filter_map(|(entity, chunk, chunk_pos, access)| {
+            chunk_managers.get(chunk.0).ok().and_then(|chunk_manager| {
+                if !is_in_any_unload_radius(chunk.0, chunk_pos.0, &loaders, chunk_manager) {
+                    let time = access.map(|a| a.0).unwrap_or(Instant::now());
+                    Some((entity, chunk_pos.0, time))
+                } else {
+                    None
+                }
+            })
         })
         .collect();
 
@@ -423,13 +437,18 @@ pub(crate) fn unload_chunks_hybrid(
 /// Checks if a chunk is within any loader's unload radius.
 #[cfg(feature = "chunk_loader")]
 fn is_in_any_unload_radius(
+    chunk_manager_entity: Entity,
     chunk_pos: IVec3,
     loaders: &Query<(&ChunkLoader, Option<&ChunkUnloadRadius>, &GlobalTransform)>,
     chunk_manager: &ChunkManager,
 ) -> bool {
     loaders.iter().any(|(loader, unload_radius, transform)| {
+        // Only check loaders that belong to the same chunk manager
+        if loader.chunk_manager_id != chunk_manager_entity {
+            return false;
+        }
         let loader_chunk = chunk_manager.get_chunk_pos(&transform.translation());
-        let radius = unload_radius.map(|r| r.0).unwrap_or(loader.0);
+        let radius = unload_radius.map(|r| r.0).unwrap_or(loader.radius);
         is_within_radius(chunk_pos, loader_chunk, radius)
     })
 }
