@@ -22,7 +22,7 @@ fn main() {
 
 struct WorldChunks;
 impl ChunkManaging for WorldChunks {
-    const SIZE: Vec3 = Vec3::splat(10.0);
+    const DIMENSIONS: Vec3 = Vec3::splat(10.0);
 }
 
 /// Example voxel data component

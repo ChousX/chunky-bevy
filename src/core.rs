@@ -6,13 +6,8 @@ use bevy::{
     prelude::*,
 };
 
-pub struct ChunkyCorePlugin;
-impl Plugin for ChunkyCorePlugin {
-    fn build(&self, app: &mut App) {}
-}
-
 pub trait ChunkManaging {
-    const SIZE: Vec3;
+    const DIMENSIONS: Vec3;
 }
 
 #[derive(Resource)]
@@ -34,7 +29,10 @@ impl<T: ChunkManaging> ChunkManagerResource<T> {
 
 impl<T: ChunkManaging> FromWorld for ChunkManagerResource<T> {
     fn from_world(world: &mut World) -> Self {
-        let id = world.commands().spawn(ChunkManager::new(T::SIZE)).id();
+        let id = world
+            .commands()
+            .spawn(ChunkManager::new(T::DIMENSIONS))
+            .id();
         Self::new(id)
     }
 }

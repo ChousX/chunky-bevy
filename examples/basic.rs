@@ -13,7 +13,7 @@ fn main() {
 
 struct Terrain;
 impl ChunkManaging for Terrain {
-    const SIZE: Vec3 = vec3(10.0, 10.0, 10.0);
+    const DIMENSIONS: Vec3 = vec3(10.0, 10.0, 10.0);
 }
 
 #[derive(Component, Debug)]

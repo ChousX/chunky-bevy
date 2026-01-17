@@ -25,7 +25,7 @@ fn main() {
 
 struct SuperWorldChunks;
 impl ChunkManaging for SuperWorldChunks {
-    const SIZE: Vec3 = Vec3::splat(10.0);
+    const DIMENSIONS: Vec3 = Vec3::splat(10.0);
 }
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug)]

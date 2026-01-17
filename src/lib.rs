@@ -39,7 +39,6 @@ pub struct ChunkyPlugin;
 
 impl Plugin for ChunkyPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(core::ChunkyCorePlugin);
         #[cfg(feature = "chunk_loader")]
         app.add_plugins(chunk_loader::ChunkLoaderPlugin);
         #[cfg(feature = "chunk_visualizer")]
