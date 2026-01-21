@@ -7,7 +7,8 @@ use bevy::{
 };
 
 pub trait ChunkManaging {
-    const DIMENSIONS: Vec3;
+    ///Dimensions of each chunk being managed
+    const DIMENSIONS: Vec3 = Vec3::splat(10.0);
 }
 
 #[derive(Resource)]
@@ -103,6 +104,7 @@ impl ChunkManager {
     on_add= on_add_chunk,
     on_remove = on_remove_chunk
 )]
+#[require(ChunkPosition)]
 pub struct Chunk(pub Entity);
 
 #[derive(Component, Default, Deref, DerefMut)]
@@ -111,14 +113,14 @@ pub struct Chunk(pub Entity);
     immutable,
     on_add= on_add_chunk_pos,
 )]
-pub struct ChunkPositon(pub IVec3);
+pub struct ChunkPosition(pub IVec3);
 
 /// Sets the entity's [`Transform`] translation based on chunk position and size.
 fn on_add_chunk_pos(
     mut world: bevy::ecs::world::DeferredWorld,
     HookContext { entity, .. }: HookContext,
 ) {
-    let chunk_pos = world.get::<ChunkPositon>(entity).unwrap();
+    let chunk_pos = world.get::<ChunkPosition>(entity).unwrap();
     let &Chunk(chunk_manager_id) = world.get::<Chunk>(entity).unwrap();
     let chunk_size = world
         .get::<ChunkManager>(chunk_manager_id)
@@ -130,7 +132,7 @@ fn on_add_chunk_pos(
 
 /// Registers the chunk with [`ChunkManager`] when added.
 fn on_add_chunk(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
-    let chunk_pos = world.get::<ChunkPositon>(entity).unwrap().0;
+    let chunk_pos = world.get::<ChunkPosition>(entity).unwrap().0;
     let &Chunk(chunk_manager_id) = world.get::<Chunk>(entity).unwrap();
     let mut chunk_manager = world.get_mut::<ChunkManager>(chunk_manager_id).unwrap();
     if chunk_manager.is_loaded(&chunk_pos) {
@@ -145,7 +147,7 @@ fn on_add_chunk(mut world: DeferredWorld, HookContext { entity, .. }: HookContex
 
 /// Unregisters the chunk from [`ChunkManager`] when removed.
 fn on_remove_chunk(mut world: DeferredWorld, HookContext { entity, .. }: HookContext) {
-    let chunk_pos = world.get::<ChunkPositon>(entity).unwrap().0;
+    let chunk_pos = world.get::<ChunkPosition>(entity).unwrap().0;
     let &Chunk(chunk_manager_id) = world.get::<Chunk>(entity).unwrap();
     world
         .get_mut::<ChunkManager>(chunk_manager_id)

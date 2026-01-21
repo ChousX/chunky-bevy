@@ -53,7 +53,7 @@ fn setup(mut commands: Commands, chunk_manager_resource: Res<ChunkManagerResourc
             let pos = IVec3::new(x, 0, z);
             commands.spawn((
                 Chunk(chunk_manager_resource.entity),
-                ChunkPositon(pos),
+                ChunkPosition(pos),
                 VoxelData {
                     values: vec![(x + z) as f32; 8],
                 },
@@ -80,7 +80,7 @@ fn handle_input(
     chunks: Query<
         (
             Entity,
-            &ChunkPositon,
+            &ChunkPosition,
             Option<&VoxelData>,
             Option<&ChunkMetadata>,
         ),
@@ -111,7 +111,7 @@ fn handle_input(
             for z in -1..=1 {
                 let pos = IVec3::new(x, 0, z);
                 let entity = commands
-                    .spawn((Chunk(chunk_manager_resource.entity), ChunkPositon(pos)))
+                    .spawn((Chunk(chunk_manager_resource.entity), ChunkPosition(pos)))
                     .id();
                 match registry.load(&mut commands, entity, &config, pos) {
                     Ok(_) => info!("Loaded chunk {:?}", pos),
@@ -140,7 +140,7 @@ fn handle_input(
 }
 
 fn show_chunks(
-    chunks: Query<(&ChunkPositon, Option<&VoxelData>, Option<&ChunkMetadata>), With<Chunk>>,
+    chunks: Query<(&ChunkPosition, Option<&VoxelData>, Option<&ChunkMetadata>), With<Chunk>>,
     mut gizmos: Gizmos,
 ) {
     for (pos, voxel, meta) in chunks.iter() {

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::prelude::{Chunk, ChunkManager, ChunkPositon};
+use crate::prelude::{Chunk, ChunkManager, ChunkPosition};
 pub struct ChunkLoaderPlugin;
 impl Plugin for ChunkLoaderPlugin {
     fn build(&self, app: &mut App) {
@@ -42,7 +42,7 @@ fn chunk_loader(
                 for z in -radius.z..=radius.z {
                     let target_chunk = in_chunk + ivec3(x, y, z);
                     if !chunk_manager.is_loaded(&target_chunk) {
-                        commands.spawn((Chunk(chunk_manager_id), ChunkPositon(target_chunk)));
+                        commands.spawn((Chunk(chunk_manager_id), ChunkPosition(target_chunk)));
                     }
                 }
             }

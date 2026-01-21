@@ -43,7 +43,7 @@ fn setup_super(
             let pos = IVec3::new(x, 0, z);
             commands.spawn((
                 Chunk(chunk_manager_resource.entity),
-                ChunkPositon(pos),
+                ChunkPosition(pos),
                 SimpleData { id: x * 100 + z },
             ));
         }
@@ -128,7 +128,7 @@ fn handle_input_super(
 }
 
 fn visualize_chunks_super(
-    chunks: Query<(&ChunkPositon, Option<&SimpleData>), With<Chunk>>,
+    chunks: Query<(&ChunkPosition, Option<&SimpleData>), With<Chunk>>,
     config: Res<ChunkSaveConfig>,
     mut gizmos: Gizmos,
 ) {

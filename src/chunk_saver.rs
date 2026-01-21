@@ -177,7 +177,7 @@ impl ChunkDataRegistry {
         config: &ChunkSaveConfig,
     ) -> Result<(), SaveError> {
         let pos = world
-            .get::<ChunkPositon>(entity)
+            .get::<ChunkPosition>(entity)
             .ok_or(SaveError::NotAChunk)?
             .0;
 
@@ -246,7 +246,7 @@ impl ChunkDataRegistry {
 
                 for &entity in entities {
                     let pos = world
-                        .get::<ChunkPositon>(entity)
+                        .get::<ChunkPosition>(entity)
                         .ok_or(SaveError::NotAChunk)?
                         .0;
 
@@ -369,7 +369,7 @@ impl ChunkDataRegistry {
                 let entity = commands
                     .spawn((
                         Chunk(chunk_manager_entity),
-                        ChunkPositon(file.pos),
+                        ChunkPosition(file.pos),
                         ChunkLoadedFromDisk,
                     ))
                     .id();
@@ -390,7 +390,7 @@ impl ChunkDataRegistry {
                     let entity = commands
                         .spawn((
                             Chunk(chunk_manager_entity),
-                            ChunkPositon(chunk_pos),
+                            ChunkPosition(chunk_pos),
                             ChunkLoadedFromDisk,
                         ))
                         .id();
@@ -459,7 +459,7 @@ fn mark_chunks_for_save(
 #[cfg(feature = "chunk_unloader")]
 fn auto_save_before_unload(
     world: &World,
-    chunks_to_save: Query<(Entity, &ChunkPositon), (With<Chunk>, With<ChunkPendingSave>)>,
+    chunks_to_save: Query<(Entity, &ChunkPosition), (With<Chunk>, With<ChunkPendingSave>)>,
     registry: Res<ChunkDataRegistry>,
     config: Res<ChunkSaveConfig>,
 ) {
@@ -473,7 +473,7 @@ fn auto_save_before_unload(
 /// Auto-load chunk data when new chunks are spawned.
 fn auto_load_on_spawn(
     mut commands: Commands,
-    new_chunks: Query<(Entity, &ChunkPositon), (Added<Chunk>, Without<ChunkLoadedFromDisk>)>,
+    new_chunks: Query<(Entity, &ChunkPosition), (Added<Chunk>, Without<ChunkLoadedFromDisk>)>,
     registry: Res<ChunkDataRegistry>,
     config: Res<ChunkSaveConfig>,
 ) {

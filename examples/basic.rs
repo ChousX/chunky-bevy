@@ -12,9 +12,7 @@ fn main() {
 }
 
 struct Terrain;
-impl ChunkManaging for Terrain {
-    const DIMENSIONS: Vec3 = vec3(10.0, 10.0, 10.0);
-}
+impl ChunkManaging for Terrain {}
 
 #[derive(Component, Debug)]
 pub struct MainCamera;

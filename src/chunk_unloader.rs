@@ -230,7 +230,7 @@ pub enum ChunkUnloadReason {
 fn update_chunk_last_access_by_limit(
     mut commands: Commands,
     loaders: Query<(&ChunkLoader, &GlobalTransform)>,
-    chunks: Query<(Entity, &Chunk, &ChunkPositon), Without<ChunkLastAccess>>,
+    chunks: Query<(Entity, &Chunk, &ChunkPosition), Without<ChunkLastAccess>>,
     chunk_managers: Query<&ChunkManager>,
 ) {
     let now = Instant::now();
@@ -268,7 +268,7 @@ fn update_chunk_last_access_by_limit(
 pub(crate) fn unload_chunks_by_limit(
     mut commands: Commands,
     mut unload_events: MessageWriter<ChunkUnloadEvent>,
-    chunks: Query<(Entity, &ChunkPositon, &ChunkLastAccess), (With<Chunk>, Without<ChunkPinned>)>,
+    chunks: Query<(Entity, &ChunkPosition, &ChunkLastAccess), (With<Chunk>, Without<ChunkPinned>)>,
     limit: Res<ChunkUnloadLimit>,
 ) {
     if chunks.iter().count() <= limit.max_chunks {
@@ -340,7 +340,7 @@ fn init_chunk_last_access(
 #[cfg(feature = "chunk_loader")]
 fn update_chunk_last_access_by_loader(
     loaders: Query<(&ChunkLoader, &GlobalTransform)>,
-    mut chunks: Query<(&Chunk, &ChunkPositon, &mut ChunkLastAccess)>,
+    mut chunks: Query<(&Chunk, &ChunkPosition, &mut ChunkLastAccess)>,
     chunk_managers: Query<&ChunkManager>,
 ) {
     let now = Instant::now();
@@ -367,7 +367,7 @@ pub(crate) fn unload_chunks_by_distance(
     mut commands: Commands,
     mut unload_events: MessageWriter<ChunkUnloadEvent>,
     loaders: Query<(&ChunkLoader, Option<&ChunkUnloadRadius>, &GlobalTransform)>,
-    chunks: Query<(Entity, &Chunk, &ChunkPositon), Without<ChunkPinned>>,
+    chunks: Query<(Entity, &Chunk, &ChunkPosition), Without<ChunkPinned>>,
     chunk_managers: Query<&ChunkManager>,
 ) {
     for (entity, chunk, chunk_pos) in chunks.iter() {
@@ -390,7 +390,7 @@ pub(crate) fn unload_chunks_hybrid(
     mut commands: Commands,
     mut unload_events: MessageWriter<ChunkUnloadEvent>,
     loaders: Query<(&ChunkLoader, Option<&ChunkUnloadRadius>, &GlobalTransform)>,
-    chunks: Query<(Entity, &Chunk, &ChunkPositon, Option<&ChunkLastAccess>), Without<ChunkPinned>>,
+    chunks: Query<(Entity, &Chunk, &ChunkPosition, Option<&ChunkLastAccess>), Without<ChunkPinned>>,
     chunk_managers: Query<&ChunkManager>,
     limit: Res<ChunkUnloadLimit>,
 ) {

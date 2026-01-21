@@ -1,5 +1,5 @@
 use crate::prelude::ChunkManager;
-use crate::prelude::ChunkPositon;
+use crate::prelude::ChunkPosition;
 
 use bevy::prelude::*;
 
@@ -30,13 +30,13 @@ pub enum ChunkBoundryVisualizer {
 /// Shows all existing chunk boundaries using gizmos
 fn chunk_boundry_visualizer(
     chunk_managers: Query<&ChunkManager>,
-    chunks: Query<&ChunkPositon>,
+    chunks: Query<&ChunkPosition>,
     mut gizmos: Gizmos,
 ) {
     for chunk_manager in chunk_managers.iter() {
         let chunk_size = chunk_manager.get_size();
 
-        for ChunkPositon(chunk_pos) in chunks.iter() {
+        for ChunkPosition(chunk_pos) in chunks.iter() {
             let origin = chunk_pos.as_vec3() * chunk_size;
 
             // 8 corners of the box

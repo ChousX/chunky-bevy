@@ -33,7 +33,9 @@ pub mod prelude {
     };
     #[cfg(feature = "chunk_visualizer")]
     pub use crate::chunk_visualizer::ChunkBoundryVisualizer;
-    pub use crate::core::{Chunk, ChunkManager, ChunkManagerResource, ChunkManaging, ChunkPositon};
+    pub use crate::core::{
+        Chunk, ChunkManager, ChunkManagerResource, ChunkManaging, ChunkPosition,
+    };
 }
 pub struct ChunkyPlugin;
 

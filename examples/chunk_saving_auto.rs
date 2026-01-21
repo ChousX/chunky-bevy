@@ -94,7 +94,7 @@ fn move_loader(
 }
 
 fn show_info(
-    chunks: Query<&ChunkPositon, With<Chunk>>,
+    chunks: Query<&ChunkPosition, With<Chunk>>,
     movers: Query<&Transform, With<Mover>>,
     chunk_managers: Query<&ChunkManager>,
     chunk_manager_resource: Res<ChunkManagerResource<AutoWorldChunks>>,
@@ -121,7 +121,7 @@ fn show_info(
 }
 
 fn visualize_chunks_auto(
-    chunks: Query<(&ChunkPositon, Option<&TerrainData>), With<Chunk>>,
+    chunks: Query<(&ChunkPosition, Option<&TerrainData>), With<Chunk>>,
     movers: Query<&Transform, With<Mover>>,
     mut gizmos: Gizmos,
 ) {
