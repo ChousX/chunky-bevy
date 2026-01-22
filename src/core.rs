@@ -6,7 +6,7 @@ use bevy::{
     prelude::*,
 };
 
-pub trait ChunkManaging {
+pub trait ChunkManaging: Send + Sync + 'static {
     ///Dimensions of each chunk being managed
     const DIMENSIONS: Vec3 = Vec3::splat(10.0);
 }
