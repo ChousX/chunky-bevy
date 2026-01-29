@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(ChunkyPlugin::default())
+        .add_plugins(ChunkyPlugin)
         .add_plugins(ChunkSavingPlugin::new("saves/test_world"))
         .register_chunk_data::<VoxelData>()
         .register_chunk_data::<ChunkMetadata>()
@@ -143,7 +143,7 @@ fn show_chunks(
             Color::srgb(1.0, 0.0, 0.0) // Red = no data
         };
 
-        gizmos.cuboid(
+        gizmos.cube(
             Transform::from_translation(world_pos).with_scale(Vec3::splat(9.0)),
             color,
         );

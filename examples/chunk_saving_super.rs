@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(ChunkyPlugin::default())
+        .add_plugins(ChunkyPlugin)
         .add_plugins(ChunkSavingPlugin::new("saves/super_world").with_style(
             SaveStyle::SuperChunk {
                 size: UVec3::splat(4),

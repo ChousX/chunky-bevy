@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(ChunkyPlugin::default())
+        .add_plugins(ChunkyPlugin)
         .add_plugins(
             ChunkSavingPlugin::new("saves/auto_world")
                 .with_auto_save()

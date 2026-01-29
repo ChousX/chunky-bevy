@@ -15,7 +15,7 @@ use chunky_bevy::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(ChunkyPlugin::default())
+        .add_plugins(ChunkyPlugin)
         .init_state::<UnloadStrategy>()
         .add_systems(Startup, setup)
         .add_systems(
