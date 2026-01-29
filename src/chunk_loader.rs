@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{Chunk, ChunkManager, ChunkPos};
+use crate::core::{Chunk, ChunkManager, ChunkPos};
 pub struct ChunkLoaderPlugin;
 impl Plugin for ChunkLoaderPlugin {
     fn build(&self, app: &mut App) {

@@ -19,7 +19,7 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::{any::TypeId, collections::HashMap, fs, path::PathBuf};
 
-use crate::{Chunk, ChunkManager, ChunkPos};
+use crate::core::{Chunk, ChunkManager, ChunkPos};
 
 #[cfg(feature = "chunk_unloader")]
 use crate::chunk_unloader::ChunkUnloadLimit;

@@ -1,10 +1,11 @@
 use bevy::{input::mouse::MouseMotion, prelude::*};
-use chunky_bevy::prelude::{ChunkBoundryVisualizer, ChunkLoader, ChunkyPlugin};
+use chunky_bevy::prelude::*;
 
 fn main() {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins);
-    app.add_plugins(ChunkyPlugin::default());
+    app.add_plugins(ChunkyPlugin);
+
     app.add_systems(Startup, setup)
         .add_systems(Update, (camera_movement, camera_look, cube_movement));
     app.run();

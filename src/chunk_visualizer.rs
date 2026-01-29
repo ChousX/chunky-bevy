@@ -1,5 +1,4 @@
-use crate::ChunkManager;
-use crate::ChunkPos;
+use crate::core::{ChunkManager, ChunkPos};
 use bevy::prelude::*;
 
 pub struct ChunkBoundryVisualizerPlugin;

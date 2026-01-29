@@ -1,6 +1,6 @@
 //! Utility functions for spawning chunks in bulk.
 
-use crate::{Chunk, ChunkPos};
+use crate::core::{Chunk, ChunkPos};
 use bevy::prelude::*;
 
 /// Spawns chunks in a rectangular region defined by two chunk positions.

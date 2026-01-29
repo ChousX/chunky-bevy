@@ -36,7 +36,7 @@ use std::{collections::BinaryHeap, time::Instant};
 
 use bevy::prelude::*;
 
-use crate::{Chunk, ChunkManager, ChunkPos};
+use crate::core::{Chunk, ChunkManager, ChunkPos};
 
 #[cfg(feature = "chunk_loader")]
 use crate::chunk_loader::ChunkLoader;
