@@ -19,7 +19,7 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::{any::TypeId, collections::HashMap, fs, path::PathBuf};
 
-use crate::core::{Chunk, ChunkManager, ChunkPos};
+use crate::core::{Chunk, ChunkManager, ChunkPosition};
 
 #[cfg(feature = "chunk_unloader")]
 use crate::chunk_unloader::ChunkUnloadLimit;
@@ -196,7 +196,10 @@ impl ChunkDataRegistry {
         entity: Entity,
         config: &ChunkSaveConfig,
     ) -> Result<(), SaveError> {
-        let pos = world.get::<ChunkPos>(entity).ok_or(SaveError::NotAChunk)?.0;
+        let pos = world
+            .get::<ChunkPosition>(entity)
+            .ok_or(SaveError::NotAChunk)?
+            .0;
 
         let components: Vec<_> = self
             .serializers
@@ -262,7 +265,10 @@ impl ChunkDataRegistry {
                     HashMap::new();
 
                 for &entity in entities {
-                    let pos = world.get::<ChunkPos>(entity).ok_or(SaveError::NotAChunk)?.0;
+                    let pos = world
+                        .get::<ChunkPosition>(entity)
+                        .ok_or(SaveError::NotAChunk)?
+                        .0;
 
                     let components: Vec<_> = self
                         .serializers
@@ -380,7 +386,7 @@ impl ChunkDataRegistry {
                     .map_err(|e| SaveError::Deserialize(e.to_string()))?;
 
                 let entity = commands
-                    .spawn((Chunk, ChunkPos(file.pos), ChunkLoadedFromDisk))
+                    .spawn((Chunk, ChunkPosition(file.pos), ChunkLoadedFromDisk))
                     .id();
 
                 for (type_name, data) in &file.components {
@@ -397,7 +403,7 @@ impl ChunkDataRegistry {
 
                 for (chunk_pos, components) in file.chunks {
                     let entity = commands
-                        .spawn((Chunk, ChunkPos(chunk_pos), ChunkLoadedFromDisk))
+                        .spawn((Chunk, ChunkPosition(chunk_pos), ChunkLoadedFromDisk))
                         .id();
 
                     for (type_name, data) in &components {
@@ -463,7 +469,7 @@ fn mark_chunks_for_save(
 #[cfg(feature = "chunk_unloader")]
 fn auto_save_before_unload(
     world: &World,
-    chunks_to_unload: Query<(Entity, &ChunkPos), (With<Chunk>, With<ChunkPendingSave>)>,
+    chunks_to_unload: Query<(Entity, &ChunkPosition), (With<Chunk>, With<ChunkPendingSave>)>,
     registry: Res<ChunkDataRegistry>,
     config: Res<ChunkSaveConfig>,
     chunk_manager: Res<ChunkManager>,
@@ -510,7 +516,7 @@ fn auto_save_before_unload(
 /// Auto-load chunk data when new chunks are spawned.
 fn auto_load_on_spawn(
     mut commands: Commands,
-    new_chunks: Query<(Entity, &ChunkPos), (Added<Chunk>, Without<ChunkLoadedFromDisk>)>,
+    new_chunks: Query<(Entity, &ChunkPosition), (Added<Chunk>, Without<ChunkLoadedFromDisk>)>,
     registry: Res<ChunkDataRegistry>,
     config: Res<ChunkSaveConfig>,
 ) {

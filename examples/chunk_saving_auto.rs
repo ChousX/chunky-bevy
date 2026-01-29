@@ -81,7 +81,7 @@ fn move_loader(
 }
 
 fn show_info(
-    chunks: Query<&ChunkPos, With<Chunk>>,
+    chunks: Query<&ChunkPosition, With<Chunk>>,
     movers: Query<&Transform, With<Mover>>,
     chunk_manager: Res<ChunkManager>,
 ) {
@@ -105,7 +105,7 @@ fn show_info(
 }
 
 fn visualize_chunks(
-    chunks: Query<(&ChunkPos, Option<&TerrainData>), With<Chunk>>,
+    chunks: Query<(&ChunkPosition, Option<&TerrainData>), With<Chunk>>,
     movers: Query<&Transform, With<Mover>>,
     mut gizmos: Gizmos,
 ) {

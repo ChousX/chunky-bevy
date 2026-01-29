@@ -31,7 +31,7 @@ fn setup(mut commands: Commands) {
     for x in -4..=4 {
         for z in -4..=4 {
             let pos = IVec3::new(x, 0, z);
-            commands.spawn((Chunk, ChunkPos(pos), SimpleData { id: x * 100 + z }));
+            commands.spawn((Chunk, ChunkPosition(pos), SimpleData { id: x * 100 + z }));
         }
     }
 
@@ -108,7 +108,7 @@ fn handle_input(
 }
 
 fn visualize_chunks(
-    chunks: Query<(&ChunkPos, Option<&SimpleData>), With<Chunk>>,
+    chunks: Query<(&ChunkPosition, Option<&SimpleData>), With<Chunk>>,
     config: Res<ChunkSaveConfig>,
     mut gizmos: Gizmos,
 ) {

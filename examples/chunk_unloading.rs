@@ -225,7 +225,7 @@ fn update_unload_resources(
 
 fn update_ui(
     mut text_query: Query<&mut Text, With<StatsText>>,
-    chunks: Query<&ChunkPos, With<Chunk>>,
+    chunks: Query<&ChunkPosition, With<Chunk>>,
     pinned: Query<(), With<ChunkPinned>>,
     player: Query<&Transform, With<Player>>,
     strategy: Res<State<UnloadStrategy>>,

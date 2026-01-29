@@ -65,7 +65,7 @@ pub mod prelude {
     pub use crate::chunk_visualizer::ChunkBoundryVisualizer;
     pub use crate::{
         ChunkyPlugin,
-        core::{Chunk, ChunkManager, ChunkPos, SetCunkyChunkSize},
+        core::{Chunk, ChunkManager, ChunkPosition, SetCunkyChunkSize},
     };
 }
 

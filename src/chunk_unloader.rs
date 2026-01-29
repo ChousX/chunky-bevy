@@ -36,7 +36,7 @@ use std::{collections::BinaryHeap, time::Instant};
 
 use bevy::prelude::*;
 
-use crate::core::{Chunk, ChunkManager, ChunkPos};
+use crate::core::{Chunk, ChunkManager, ChunkPosition};
 
 #[cfg(feature = "chunk_loader")]
 use crate::chunk_loader::ChunkLoader;
@@ -227,7 +227,7 @@ pub enum ChunkUnloadReason {
 fn update_chunk_last_access_by_limit(
     mut commands: Commands,
     loaders: Query<(&ChunkLoader, &GlobalTransform)>,
-    mut chunks: Query<(Entity, &ChunkPos), With<Chunk>>,
+    mut chunks: Query<(Entity, &ChunkPosition), With<Chunk>>,
     chunk_manager: Res<ChunkManager>,
 ) {
     let now = Instant::now();
@@ -263,7 +263,7 @@ fn update_chunk_last_access_by_limit(
 pub(crate) fn unload_chunks_by_limit(
     mut commands: Commands,
     mut unload_events: MessageWriter<ChunkUnloadEvent>,
-    chunks: Query<(Entity, &ChunkPos, &ChunkLastAccess), (With<Chunk>, Without<ChunkPinned>)>,
+    chunks: Query<(Entity, &ChunkPosition, &ChunkLastAccess), (With<Chunk>, Without<ChunkPinned>)>,
     limit: Res<ChunkUnloadLimit>,
 ) {
     if chunks.iter().count() <= limit.max_chunks {
@@ -335,7 +335,7 @@ fn init_chunk_last_access(
 #[cfg(feature = "chunk_loader")]
 fn update_chunk_last_access_by_loader(
     loaders: Query<(&ChunkLoader, &GlobalTransform)>,
-    mut chunks: Query<(&ChunkPos, &mut ChunkLastAccess), With<Chunk>>,
+    mut chunks: Query<(&ChunkPosition, &mut ChunkLastAccess), With<Chunk>>,
     chunk_manager: Res<ChunkManager>,
 ) {
     let now = Instant::now();
@@ -357,7 +357,7 @@ pub(crate) fn unload_chunks_by_distance(
     mut commands: Commands,
     mut unload_events: MessageWriter<ChunkUnloadEvent>,
     loaders: Query<(&ChunkLoader, Option<&ChunkUnloadRadius>, &GlobalTransform)>,
-    chunks: Query<(Entity, &ChunkPos), (With<Chunk>, Without<ChunkPinned>)>,
+    chunks: Query<(Entity, &ChunkPosition), (With<Chunk>, Without<ChunkPinned>)>,
     chunk_manager: Res<ChunkManager>,
 ) {
     for (entity, chunk_pos) in chunks.iter() {
@@ -379,7 +379,7 @@ pub(crate) fn unload_chunks_hybrid(
     mut unload_events: MessageWriter<ChunkUnloadEvent>,
     loaders: Query<(&ChunkLoader, Option<&ChunkUnloadRadius>, &GlobalTransform)>,
     chunks: Query<
-        (Entity, &ChunkPos, Option<&ChunkLastAccess>),
+        (Entity, &ChunkPosition, Option<&ChunkLastAccess>),
         (With<Chunk>, Without<ChunkPinned>),
     >,
     chunk_manager: Res<ChunkManager>,

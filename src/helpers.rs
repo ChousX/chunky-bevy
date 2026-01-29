@@ -1,6 +1,6 @@
 //! Utility functions for spawning chunks in bulk.
 
-use crate::core::{Chunk, ChunkPos};
+use crate::core::{Chunk, ChunkPosition};
 use bevy::prelude::*;
 
 /// Spawns chunks in a rectangular region defined by two chunk positions.
@@ -36,7 +36,7 @@ pub fn spawn_chunks_rect(commands: &mut Commands, chunk_pos_0: IVec3, chunk_pos_
         for y in y_small..=y_big {
             for z in z_small..=z_big {
                 let chunk_pos = ivec3(x, y, z);
-                commands.spawn((Chunk, ChunkPos(chunk_pos)));
+                commands.spawn((Chunk, ChunkPosition(chunk_pos)));
             }
         }
     }
