@@ -1,10 +1,13 @@
 use bevy::prelude::*;
 
-use crate::core::{Chunk, ChunkManager, ChunkPosition};
+use crate::{
+    ChunkySet,
+    core::{Chunk, ChunkManager, ChunkPosition},
+};
 pub struct ChunkLoaderPlugin;
 impl Plugin for ChunkLoaderPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, chunk_loader);
+        app.add_systems(Update, chunk_loader.in_set(ChunkySet::Load));
         #[cfg(feature = "reflect")]
         app.register_type::<ChunkLoader>();
     }

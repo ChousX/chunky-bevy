@@ -19,10 +19,40 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::{any::TypeId, collections::HashMap, fs, path::PathBuf};
 
-use crate::core::{Chunk, ChunkManager, ChunkPosition};
+use crate::{
+    ChunkySet,
+    core::{Chunk, ChunkManager, ChunkPosition},
+};
 
 #[cfg(feature = "chunk_unloader")]
 use crate::chunk_unloader::ChunkUnloadLimit;
+
+/// Sent when a chunk is spawned and has no saved data on disk.
+///
+/// Listen to this event to generate terrain, voxels, or other initial chunk data.
+///
+/// # Example
+///
+/// ```no_run
+/// use bevy::prelude::*;
+/// use chunky_bevy::prelude::*;
+/// use chunky_bevy::saving::prelude::*;
+///
+/// fn generate_terrain(
+///     mut commands: Commands,
+///     mut events: EventReader<ChunkNeedsGeneration>,
+/// ) {
+///     for event in events.read() {
+///         let voxels = generate_voxels_for(event.pos);
+///         commands.entity(event.entity).insert(voxels);
+///     }
+/// }
+/// ```
+#[derive(Event, Debug, Clone)]
+pub struct ChunkNeedsGeneration {
+    pub entity: Entity,
+    pub pos: IVec3,
+}
 
 pub struct ChunkSavingPlugin {
     base_path: PathBuf,
@@ -81,19 +111,19 @@ impl Plugin for ChunkSavingPlugin {
         // Auto-save before chunk unload
         #[cfg(feature = "chunk_unloader")]
         if self.auto_save {
+            use crate::ChunkySet;
+
             app.add_systems(
-                PostUpdate,
+                Update,
                 (mark_chunks_for_save, auto_save_before_unload)
                     .chain()
-                    .before(crate::chunk_unloader::unload_chunks_by_limit)
-                    .before(crate::chunk_unloader::unload_chunks_by_distance)
-                    .before(crate::chunk_unloader::unload_chunks_hybrid),
+                    .in_set(ChunkySet::Save),
             );
         }
 
         // Auto-load on chunk spawn
         if self.auto_load {
-            app.add_systems(PostUpdate, auto_load_on_spawn);
+            app.add_systems(Update, auto_load_on_spawn.in_set(ChunkySet::Load));
         }
     }
 }
@@ -514,7 +544,7 @@ fn auto_save_before_unload(
 }
 
 /// Auto-load chunk data when new chunks are spawned.
-fn auto_load_on_spawn(
+fn _auto_load_on_spawn(
     mut commands: Commands,
     new_chunks: Query<(Entity, &ChunkPosition), (Added<Chunk>, Without<ChunkLoadedFromDisk>)>,
     registry: Res<ChunkDataRegistry>,
@@ -526,6 +556,39 @@ fn auto_load_on_spawn(
             && let Err(e) = registry.load(&mut commands, entity, &config, chunk_pos.0)
         {
             error!("Failed to auto-load chunk {:?}: {:?}", chunk_pos.0, e);
+        }
+    }
+}
+
+/// Auto-load chunk data when new chunks are spawned.
+fn auto_load_on_spawn(
+    mut commands: Commands,
+    new_chunks: Query<(Entity, &ChunkPosition), (Added<Chunk>, Without<ChunkLoadedFromDisk>)>,
+    registry: Res<ChunkDataRegistry>,
+    config: Res<ChunkSaveConfig>,
+) {
+    for (entity, chunk_pos) in new_chunks.iter() {
+        let path = config.chunk_path(chunk_pos.0);
+        if path.exists() {
+            match registry.load(&mut commands, entity, &config, chunk_pos.0) {
+                Ok(()) => {
+                    commands.entity(entity).insert(ChunkLoadedFromDisk);
+                }
+                Err(e) => {
+                    error!("Failed to auto-load chunk {:?}: {:?}", chunk_pos.0, e);
+                    // Still send generation event on load failure
+                    commands.trigger(ChunkNeedsGeneration {
+                        entity,
+                        pos: chunk_pos.0,
+                    });
+                }
+            }
+        } else {
+            // No saved data - needs generation
+            commands.trigger(ChunkNeedsGeneration {
+                entity,
+                pos: chunk_pos.0,
+            });
         }
     }
 }

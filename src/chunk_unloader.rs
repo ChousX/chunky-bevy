@@ -39,7 +39,7 @@ use bevy::prelude::*;
 use crate::core::{Chunk, ChunkManager, ChunkPosition};
 
 #[cfg(feature = "chunk_loader")]
-use crate::chunk_loader::ChunkLoader;
+use crate::{ChunkySet, chunk_loader::ChunkLoader};
 
 pub struct ChunkUnloaderPlugin;
 
@@ -50,13 +50,14 @@ impl Plugin for ChunkUnloaderPlugin {
         // Limit-based systems
         #[cfg(feature = "chunk_loader")]
         app.add_systems(
-            PostUpdate,
+            Update,
             (
                 init_chunk_last_access,
                 update_chunk_last_access_by_limit,
                 unload_chunks_by_limit,
             )
                 .chain()
+                .in_set(ChunkySet::Unload)
                 .run_if(
                     resource_exists::<ChunkUnloadLimit>
                         .and(not(resource_exists::<ChunkUnloadByDistance>)),
@@ -65,13 +66,14 @@ impl Plugin for ChunkUnloaderPlugin {
 
         #[cfg(not(feature = "chunk_loader"))]
         app.add_systems(
-            PostUpdate,
+            Update,
             (
                 init_chunk_last_access,
                 update_chunk_last_access_by_limit,
                 unload_chunks_by_limit,
             )
                 .chain()
+                .in_set(ChunkySet::Unload)
                 .run_if(resource_exists::<ChunkUnloadLimit>),
         );
 
@@ -79,17 +81,18 @@ impl Plugin for ChunkUnloaderPlugin {
         #[cfg(feature = "chunk_loader")]
         {
             app.add_systems(
-                PostUpdate,
-                unload_chunks_by_distance.run_if(
+                Update,
+                unload_chunks_by_distance.in_set(ChunkySet::Unload).run_if(
                     resource_exists::<ChunkUnloadByDistance>
                         .and(not(resource_exists::<ChunkUnloadLimit>)),
                 ),
             );
 
             app.add_systems(
-                PostUpdate,
+                Update,
                 (update_chunk_last_access_by_loader, unload_chunks_hybrid)
                     .chain()
+                    .in_set(ChunkySet::Unload)
                     .run_if(
                         resource_exists::<ChunkUnloadByDistance>
                             .and(resource_exists::<ChunkUnloadLimit>),

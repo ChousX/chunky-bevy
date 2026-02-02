@@ -1,4 +1,7 @@
-use crate::core::{ChunkManager, ChunkPosition};
+use crate::{
+    ChunkySet,
+    core::{ChunkManager, ChunkPosition},
+};
 use bevy::prelude::*;
 
 pub struct ChunkBoundryVisualizerPlugin;
@@ -6,7 +9,9 @@ impl Plugin for ChunkBoundryVisualizerPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<ChunkBoundryVisualizer>().add_systems(
             Update,
-            chunk_boundry_visualizer.run_if(in_state(ChunkBoundryVisualizer::On)),
+            chunk_boundry_visualizer
+                .in_set(ChunkySet::Visualize)
+                .run_if(in_state(ChunkBoundryVisualizer::On)),
         );
         #[cfg(feature = "reflect")]
         app.register_type::<ChunkBoundryVisualizer>();

@@ -69,6 +69,41 @@ pub mod prelude {
     };
 }
 
+/// System sets for ordering chunk-related systems.
+///
+/// # Ordering
+///
+/// The sets run in this order within their respective schedules:
+/// - `Update`: `Load` → `Visualize`
+/// - `PostUpdate`: `Save` → `Unload`
+///
+/// # Example
+///
+/// ```no_run
+/// use bevy::prelude::*;
+/// use chunky_bevy::prelude::*;
+///
+/// App::new()
+///     .add_plugins(ChunkyPlugin)
+///     // Generate terrain after chunks are loaded
+///     .add_systems(Update, generate_terrain.after(ChunkySet::Load))
+///     // Save custom data before chunks unload
+///     .add_systems(PostUpdate, save_voxel_data.before(ChunkySet::Save))
+///     .run();
+/// ```
+#[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ChunkySet {
+    /// Chunk loading (runs in `Update`)
+    Load,
+    /// Chunk saving before unload (runs in `PostUpdate`)
+    Save,
+    /// Chunk unloading (runs in `PostUpdate`, after `Save`)
+    Unload,
+    /// Debug visualization (runs in `Update`, after `Load`)
+    #[cfg(feature = "chunk_visualizer")]
+    Visualize,
+}
+
 /// The main plugin for chunk management.
 ///
 /// # Example
@@ -85,6 +120,14 @@ pub struct ChunkyPlugin;
 
 impl Plugin for ChunkyPlugin {
     fn build(&self, app: &mut App) {
+        // Configuring the sets to run in order.
+        let mut schedule = Schedule::default();
+        {
+            use ChunkySet::*;
+            schedule.configure_sets((Load, Save, Unload, Visualize).chain());
+        }
+        app.add_schedule(schedule);
+
         app.insert_resource(core::ChunkManager::default());
         #[cfg(feature = "chunk_loader")]
         app.add_plugins(chunk_loader::ChunkLoaderPlugin);
