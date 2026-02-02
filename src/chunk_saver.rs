@@ -544,23 +544,6 @@ fn auto_save_before_unload(
 }
 
 /// Auto-load chunk data when new chunks are spawned.
-fn _auto_load_on_spawn(
-    mut commands: Commands,
-    new_chunks: Query<(Entity, &ChunkPosition), (Added<Chunk>, Without<ChunkLoadedFromDisk>)>,
-    registry: Res<ChunkDataRegistry>,
-    config: Res<ChunkSaveConfig>,
-) {
-    for (entity, chunk_pos) in new_chunks.iter() {
-        let path = config.chunk_path(chunk_pos.0);
-        if path.exists()
-            && let Err(e) = registry.load(&mut commands, entity, &config, chunk_pos.0)
-        {
-            error!("Failed to auto-load chunk {:?}: {:?}", chunk_pos.0, e);
-        }
-    }
-}
-
-/// Auto-load chunk data when new chunks are spawned.
 fn auto_load_on_spawn(
     mut commands: Commands,
     new_chunks: Query<(Entity, &ChunkPosition), (Added<Chunk>, Without<ChunkLoadedFromDisk>)>,
@@ -576,7 +559,6 @@ fn auto_load_on_spawn(
                 }
                 Err(e) => {
                     error!("Failed to auto-load chunk {:?}: {:?}", chunk_pos.0, e);
-                    // Still send generation event on load failure
                     commands.trigger(ChunkNeedsGeneration {
                         entity,
                         pos: chunk_pos.0,
@@ -584,7 +566,6 @@ fn auto_load_on_spawn(
                 }
             }
         } else {
-            // No saved data - needs generation
             commands.trigger(ChunkNeedsGeneration {
                 entity,
                 pos: chunk_pos.0,

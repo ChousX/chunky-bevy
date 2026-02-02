@@ -7,7 +7,7 @@ use crate::{
 pub struct ChunkLoaderPlugin;
 impl Plugin for ChunkLoaderPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, chunk_loader.in_set(ChunkySet::Load));
+        app.add_systems(Update, chunk_loader.in_set(ChunkySet::Spawn));
         #[cfg(feature = "reflect")]
         app.register_type::<ChunkLoader>();
     }

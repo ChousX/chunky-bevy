@@ -51,8 +51,8 @@ pub mod prelude {
     pub use crate::chunk_loader::ChunkLoader;
     #[cfg(feature = "chunk_saver")]
     pub use crate::chunk_saver::{
-        ChunkDataRegistry, ChunkSaveConfig, ChunkSavingPlugin, RegisterChunkData, SaveError,
-        SaveStyle,
+        ChunkDataRegistry, ChunkNeedsGeneration, ChunkSaveConfig, ChunkSavingPlugin,
+        RegisterChunkData, SaveError, SaveStyle,
     };
     #[cfg(all(feature = "chunk_unloader", feature = "chunk_loader"))]
     pub use crate::chunk_unloader::ChunkUnloadRadius;
@@ -91,15 +91,18 @@ pub mod prelude {
 ///     .add_systems(PostUpdate, save_voxel_data.before(ChunkySet::Save))
 ///     .run();
 /// ```
+
 #[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ChunkySet {
-    /// Chunk loading (runs in `Update`)
+    /// Chunk spawning - ChunkLoader creates new chunk entities (runs in `Update`)
+    Spawn,
+    /// Chunk data loading - loads saved data or triggers generation (runs in `Update`, after `Spawn`)
     Load,
-    /// Chunk saving before unload (runs in `PostUpdate`)
+    /// Chunk saving before unload (runs in `Update`)
     Save,
-    /// Chunk unloading (runs in `PostUpdate`, after `Save`)
+    /// Chunk unloading (runs in `Update`, after `Save`)
     Unload,
-    /// Debug visualization (runs in `Update`, after `Load`)
+    /// Debug visualization (runs in `Update`, after `Unload`)
     #[cfg(feature = "chunk_visualizer")]
     Visualize,
 }
@@ -120,23 +123,34 @@ pub struct ChunkyPlugin;
 
 impl Plugin for ChunkyPlugin {
     fn build(&self, app: &mut App) {
-        // Configuring the sets to run in order.
-        let mut schedule = Schedule::default();
-        {
-            use ChunkySet::*;
-            schedule.configure_sets((Load, Save, Unload, Visualize).chain());
-        }
-        app.add_schedule(schedule);
-
         app.insert_resource(core::ChunkManager::default());
+
+        // Configure set ordering within Update schedule
+        app.configure_sets(
+            Update,
+            (
+                ChunkySet::Spawn,
+                //#[cfg(feature = "chunk_loader")]
+                ChunkySet::Load,
+                //#[cfg(feature = "chunk_saver")]
+                ChunkySet::Save,
+                //#[cfg(feature = "chunk_unloader")]
+                ChunkySet::Unload,
+                //#[cfg(feature = "chunk_visualizer")]
+                ChunkySet::Visualize,
+            )
+                .chain(),
+        );
+
         #[cfg(feature = "chunk_loader")]
         app.add_plugins(chunk_loader::ChunkLoaderPlugin);
         #[cfg(feature = "chunk_visualizer")]
         app.add_plugins(chunk_visualizer::ChunkBoundryVisualizerPlugin);
         #[cfg(feature = "chunk_unloader")]
         app.add_plugins(chunk_unloader::ChunkUnloaderPlugin);
+
         #[cfg(feature = "reflect")]
-        app.register_type::<ChunkPos>()
-            .register_type::<ChunkManager>();
+        app.register_type::<core::ChunkPosition>()
+            .register_type::<core::ChunkManager>();
     }
 }
