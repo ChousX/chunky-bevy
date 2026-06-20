@@ -12,7 +12,7 @@ categories = ["game-engines", "game-development"]
 exclude = ["flake.nix", "flake.lock", ".gitignore"]
 
 [dependencies]
-bevy = { version = "0.18", features = ["wayland"] }
+bevy = { version = "0.19", features = ["wayland"] }
 serde = { version = "1", features = ["derive"], optional = true}
 postcard = { version = "1", features = ["alloc"], optional = true}
 
