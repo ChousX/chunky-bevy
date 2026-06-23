@@ -18,8 +18,8 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-bevy = "0.17"
-chunky-bevy = "0.2"
+bevy = "0.19"
+chunky-bevy = "0.19"
 ```
 
 Basic usage:
@@ -65,7 +65,7 @@ fn setup(mut commands: Commands) {
 
 ### Disable default features:
 ```toml
-chunky-bevy = { version = "0.2", default-features = false }
+chunky-bevy = { version = "0.19", default-features = false }
 ```
 
 ## Components
@@ -300,6 +300,7 @@ cargo run --example chunk_saving_super
 
 | Chunky Bevy | Bevy  |
 |-------------|-------|
+| 0.19        | 0.19  |
 | 0.18        | 0.18  |
 | 0.2         | 0.17  |
 | 0.1         | 0.17  |
